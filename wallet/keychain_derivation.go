@@ -8,6 +8,8 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+
+	renegade_crypto "renegade.fi/golang-sdk/crypto"
 )
 
 // derivationKeyMessage is the message that is signed to derive the derivation key
@@ -24,7 +26,7 @@ const symmetricKeyMessage = "symmetric key"
 const matchKeyMessage = "match key"
 
 // DeriveKeychain derives the keychain from the private key
-func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*ecdsa.PrivateKey, error) {
+func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*Keychain, error) {
 	// Create the derivation key
 	derivationKey, err := createDerivationKey(pkey, chainId)
 	if err != nil {
@@ -42,16 +44,37 @@ func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*ecdsa.PrivateKey, 
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("symmetricKey", symmetricKey)
 
 	// Derive the match key
 	matchKey, err := deriveMatchKey(derivationKey)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("matchKey", matchKey)
 
-	return rootKey, nil
+	keychain := createKeychain(rootKey, matchKey, symmetricKey)
+	return keychain, nil
+}
+
+// createKeychain creates a new keychain from the private keys
+func createKeychain(skRoot *ecdsa.PrivateKey, skMatch Scalar, symmetricKey HmacKey) *Keychain {
+	privateKeys := PrivateKeychain{
+		SkRoot:       skRoot,
+		SkMatch:      skMatch,
+		SymmetricKey: symmetricKey,
+	}
+
+	pkRoot := skRoot.PublicKey
+	pkMatch := publicMatchKey(skMatch)
+	publicKeys := PublicKeychain{
+		PkRoot:  pkRoot,
+		PkMatch: pkMatch,
+	}
+
+	return &Keychain{
+		PublicKeys:  publicKeys,
+		PrivateKeys: privateKeys,
+		Nonce:       0,
+	}
 }
 
 // createDerivationKey creates a new private key from the signature
@@ -87,15 +110,27 @@ func deriveRootKey(derivationKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, error) {
 }
 
 // deriveSymmetricKey derives the symmetric key from the derivation key
-func deriveSymmetricKey(rootKey *ecdsa.PrivateKey) ([]byte, error) {
+func deriveSymmetricKey(rootKey *ecdsa.PrivateKey) (HmacKey, error) {
 	message := []byte(symmetricKeyMessage)
-	return getSigBytes(rootKey, message)
+	bytes, err := getSigBytes(rootKey, message)
+	if err != nil {
+		return HmacKey{}, err
+	}
+
+	return HmacKey(bytes), nil
 }
 
 // deriveMatchKey derives the secret match key from the derivation key
 func deriveMatchKey(derivationKey *ecdsa.PrivateKey) (Scalar, error) {
 	message := []byte(matchKeyMessage)
 	return deriveScalar(message, derivationKey)
+}
+
+// publicMatchKey derives the public match key from the private match key
+func publicMatchKey(skMatch Scalar) Scalar {
+	sponge := renegade_crypto.NewPoseidon2Sponge()
+	res := sponge.Hash([]fr.Element{fr.Element(skMatch)})
+	return Scalar(res)
 }
 
 // secpKeyFromBytes creates a secp256k1 private key from a byte slice
