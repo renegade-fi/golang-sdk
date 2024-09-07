@@ -8,22 +8,37 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/google/uuid"
 
 	renegade_crypto "renegade.fi/golang-sdk/crypto"
 )
 
-// derivationKeyMessage is the message that is signed to derive the derivation key
-// From which all other keys can be derived
-const derivationKeyMessage = "Unlock your Renegade Wallet on chain ID:"
+const (
+	// derivationKeyMessage is the message that is signed to derive the derivation key
+	// From which all other keys can be derived
+	derivationKeyMessage = "Unlock your Renegade Wallet on chain ID:"
 
-// rootKeyMessage is the message that is signed to derive the root key
-const rootKeyMessage = "root key"
+	// rootKeyMessage is the message that is signed to derive the root key
+	rootKeyMessage = "root key"
 
-// symmetricKeyMessage is the message that is signed to derive the symmetric key
-const symmetricKeyMessage = "symmetric key"
+	// symmetricKeyMessage is the message that is signed to derive the symmetric key
+	symmetricKeyMessage = "symmetric key"
 
-// matchKeyMessage is the message that is signed to derive the match key
-const matchKeyMessage = "match key"
+	// matchKeyMessage is the message that is signed to derive the match key
+	matchKeyMessage = "match key"
+
+	// blinderSeedMessage is the message used to derive the blinder stream seed
+	blinderSeedMessage = "blinder seed"
+
+	// shareSeedMessage is the message used to derive the secret share stream seed
+	shareSeedMessage = "share seed"
+
+	// walletIdMessage is the message used to derive the wallet ID
+	walletIdMessage = "wallet id"
+
+	// walletIdNumBytes is the number of bytes in the wallet ID
+	walletIdNumBytes = 16
+)
 
 // DeriveKeychain derives the keychain from the private key
 func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*Keychain, error) {
@@ -53,6 +68,51 @@ func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*Keychain, error) {
 
 	keychain := createKeychain(rootKey, matchKey, symmetricKey)
 	return keychain, nil
+}
+
+// DeriveWalletSeeds derives the blinder and secret share seeds from the derivation key
+func DeriveWalletSeeds(privateKey *ecdsa.PrivateKey, chainId uint64) (blinderSeed, shareSeed Scalar, err error) {
+	// Create the derivation key
+	derivationKey, err := createDerivationKey(privateKey, chainId)
+	if err != nil {
+		return Scalar{}, Scalar{}, err
+	}
+
+	blinderSeed, err = deriveScalar([]byte(blinderSeedMessage), derivationKey)
+	if err != nil {
+		return Scalar{}, Scalar{}, err
+	}
+
+	shareSeed, err = deriveScalar([]byte(shareSeedMessage), derivationKey)
+	if err != nil {
+		return Scalar{}, Scalar{}, err
+	}
+
+	return blinderSeed, shareSeed, nil
+}
+
+// DeriveWalletID derives the wallet ID from the private key
+func DeriveWalletID(privateKey *ecdsa.PrivateKey, chainId uint64) (uuid.UUID, error) {
+	// Create the derivation key
+	derivationKey, err := createDerivationKey(privateKey, chainId)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	// Derive the wallet ID
+	walletIdBytes, err := getExtendedSigBytes([]byte(walletIdMessage), derivationKey)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	// Convert the bytes to a UUID
+	walletId, err := uuid.FromBytes(walletIdBytes[:walletIdNumBytes])
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to create UUID from bytes: %v", err)
+	}
+
+	return walletId, nil
+
 }
 
 // createKeychain creates a new keychain from the private keys
