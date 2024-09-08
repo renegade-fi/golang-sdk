@@ -118,22 +118,22 @@ func DeriveWalletID(privateKey *ecdsa.PrivateKey, chainId uint64) (uuid.UUID, er
 // createKeychain creates a new keychain from the private keys
 func createKeychain(skRoot *ecdsa.PrivateKey, skMatch Scalar, symmetricKey HmacKey) *Keychain {
 	privateKeys := PrivateKeychain{
-		SkRoot:       skRoot,
+		SkRoot:       (*PrivateSigningKey)(skRoot),
 		SkMatch:      skMatch,
 		SymmetricKey: symmetricKey,
 	}
 
-	pkRoot := skRoot.PublicKey
+	pkRoot := PublicSigningKey(skRoot.PublicKey)
 	pkMatch := publicMatchKey(skMatch)
 	publicKeys := PublicKeychain{
 		PkRoot:  pkRoot,
 		PkMatch: pkMatch,
+		Nonce:   0,
 	}
 
 	return &Keychain{
 		PublicKeys:  publicKeys,
 		PrivateKeys: privateKeys,
-		Nonce:       0,
 	}
 }
 

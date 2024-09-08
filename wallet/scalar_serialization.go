@@ -77,8 +77,6 @@ func ToScalarsRecursive(s interface{}) ([]Scalar, error) {
 		return toScalarsStruct(elem)
 	case reflect.Array:
 		return toScalarsArray(elem)
-	case reflect.Slice:
-		return toScalarsSlice(elem)
 	case reflect.Pointer:
 		return ToScalarsRecursive(elem.Interface())
 	default:
@@ -107,25 +105,6 @@ func toScalarsStruct(v reflect.Value) ([]Scalar, error) {
 
 // toScalarsArray is a helper function to serialize an array to a slice of scalars using reflection
 func toScalarsArray(v reflect.Value) ([]Scalar, error) {
-	scalars := []Scalar{}
-	for i := 0; i < v.Len(); i++ {
-		elem := v.Index(i)
-		if !elem.CanAddr() {
-			return nil, fmt.Errorf("cannot take address of element %d", i)
-		}
-
-		// Convert the element to a Scalar, passing a pointer
-		fieldScalars, err := ToScalarsRecursive(elem.Addr().Interface())
-		if err != nil {
-			return nil, fmt.Errorf("error serializing element %d: %w", i, err)
-		}
-		scalars = append(scalars, fieldScalars...)
-	}
-	return scalars, nil
-}
-
-// toScalarsSlice is a helper function to serialize a slice to a slice of scalars using reflection
-func toScalarsSlice(v reflect.Value) ([]Scalar, error) {
 	scalars := []Scalar{}
 	for i := 0; i < v.Len(); i++ {
 		elem := v.Index(i)
@@ -189,8 +168,6 @@ func FromScalarsRecursive(s interface{}, scalars *ScalarIterator) error {
 		return fromScalarsStruct(v, scalars)
 	case reflect.Array:
 		return fromScalarsArray(v, scalars)
-	case reflect.Slice:
-		return fromScalarsSlice(v, scalars)
 	case reflect.Ptr:
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
@@ -223,24 +200,5 @@ func fromScalarsArray(v reflect.Value, scalars *ScalarIterator) error {
 			return err
 		}
 	}
-	return nil
-}
-
-// fromScalarsSlice is a helper function to deserialize a slice from a slice of scalars using reflection
-func fromScalarsSlice(v reflect.Value, scalars *ScalarIterator) error {
-	sliceType := v.Type()
-	elemType := sliceType.Elem()
-
-	newSlice := reflect.MakeSlice(sliceType, 0, scalars.NumRemaining())
-
-	for scalars.NumRemaining() > 0 {
-		newElem := reflect.New(elemType).Elem()
-		if err := FromScalarsRecursive(newElem.Addr().Interface(), scalars); err != nil {
-			return err
-		}
-		newSlice = reflect.Append(newSlice, newElem)
-	}
-
-	v.Set(newSlice)
 	return nil
 }
