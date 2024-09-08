@@ -6,6 +6,35 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
 
+// PoseidonCSPRNG is a CSPRNG based on the Poseidon2 permutation
+type PoseidonCSPRNG struct {
+	state *fr.Element
+}
+
+// NewPoseidonCSPRNG creates a new PoseidonCSPRNG instance
+func NewPoseidonCSPRNG(seed fr.Element) *PoseidonCSPRNG {
+	return &PoseidonCSPRNG{
+		state: &seed,
+	}
+}
+
+// Next returns the next scalar in the CSPRNG
+func (p *PoseidonCSPRNG) Next() fr.Element {
+	hashRes := NewPoseidon2Sponge().Hash([]fr.Element{*p.state})
+	p.state = &hashRes
+	return hashRes
+}
+
+// Return the next n scalars in the CSPRNG
+func (p *PoseidonCSPRNG) NextN(n int) []fr.Element {
+	result := make([]fr.Element, n)
+	for i := 0; i < n; i++ {
+		result[i] = p.Next()
+	}
+
+	return result
+}
+
 // Poseidon2Sponge represents a sponge construction on top of the Poseidon2 permutation
 // Modeled after the implementation in:
 // https://github.com/renegade-fi/renegade/blob/main/renegade-crypto/src/hash/poseidon2.rs

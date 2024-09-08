@@ -35,24 +35,24 @@ func (a *Amount) UnmarshalJSON(b []byte) error {
 	return a.SetString(string(b), 10)
 }
 
-// OrderSide represents the side of an order (buy or sell)
-type OrderSide uint8
+// ApiOrderSide represents the side of an order (buy or sell)
+type ApiOrderSide uint8
 
 const (
-	Buy OrderSide = iota
+	Buy ApiOrderSide = iota
 	Sell
 )
 
-// OrderType represents the type of an order (midpoint or limit)
-type OrderType uint8
+// ApiOrderType represents the type of an order (midpoint or limit)
+type ApiOrderType uint8
 
 const (
-	Midpoint OrderType = iota
+	Midpoint ApiOrderType = iota
 	Limit
 )
 
-// Order is an order in a Renegade wallet
-type Order struct {
+// ApiOrder is an order in a Renegade wallet
+type ApiOrder struct {
 	// The id of the order
 	Id uuid.UUID `json:"id"`
 	// The mint (erc20 address) of the base asset
@@ -71,8 +71,8 @@ type Order struct {
 	WorstCasePrice string `json:"worst_case_price"`
 }
 
-// Balance is a balance in a Renegade wallet
-type Balance struct {
+// ApiBalance is a balance in a Renegade wallet
+type ApiBalance struct {
 	// The mint (erc20 address) of the asset
 	Mint string `json:"mint"`
 	// The amount of the asset
@@ -83,8 +83,8 @@ type Balance struct {
 	ProtocolFeeBalance Amount `json:"protocol_fee_balance"`
 }
 
-// PublicKeychain is a public keychain in the Renegade system
-type PublicKeychain struct {
+// ApiPublicKeychain is a public keychain in the Renegade system
+type ApiPublicKeychain struct {
 	// The public root key of the wallet
 	// As a hex string
 	PkRoot string `json:"pk_root"`
@@ -94,7 +94,7 @@ type PublicKeychain struct {
 }
 
 // ApiPrivateKeychain represents a private keychain for the API wallet
-type PrivateKeychain struct {
+type ApiPrivateKeychain struct {
 	// The private root key of the wallet
 	// As a hex string, optional
 	SkRoot *string `json:"sk_root,omitempty"`
@@ -106,26 +106,26 @@ type PrivateKeychain struct {
 	SymmetricKey string `json:"symmetric_key"`
 }
 
-// Keychain represents a keychain API type that maintains all keys as hex strings
-type Keychain struct {
+// ApiKeychain represents a keychain API type that maintains all keys as hex strings
+type ApiKeychain struct {
 	// The public keychain
-	PublicKeys PublicKeychain `json:"public_keys"`
+	PublicKeys ApiPublicKeychain `json:"public_keys"`
 	// The private keychain
-	PrivateKeys PrivateKeychain `json:"private_keys"`
+	PrivateKeys ApiPrivateKeychain `json:"private_keys"`
 	// The nonce of the keychain
 	Nonce uint64 `json:"nonce"`
 }
 
-// Wallet is a wallet in the Renegade system
-type Wallet struct {
+// ApiWallet is a wallet in the Renegade system
+type ApiWallet struct {
 	// Identifier
 	Id uuid.UUID `json:"id"`
 	// The orders maintained by this wallet
-	Orders []Order `json:"orders"`
+	Orders []ApiOrder `json:"orders"`
 	// The balances maintained by the wallet to cover orders
-	Balances []Balance `json:"balances"`
+	Balances []ApiBalance `json:"balances"`
 	// The keys that authenticate wallet access
-	KeyChain Keychain `json:"key_chain"`
+	KeyChain ApiKeychain `json:"key_chain"`
 	// The managing cluster's public key
 	// The public encryption key of the cluster that may collect relayer fees
 	// on this wallet
