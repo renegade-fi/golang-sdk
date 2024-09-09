@@ -128,7 +128,7 @@ func createKeychain(skRoot *ecdsa.PrivateKey, skMatch Scalar, symmetricKey HmacK
 	publicKeys := PublicKeychain{
 		PkRoot:  pkRoot,
 		PkMatch: pkMatch,
-		Nonce:   0,
+		Nonce:   Scalar{},
 	}
 
 	return &Keychain{

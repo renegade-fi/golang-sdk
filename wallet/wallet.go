@@ -46,6 +46,16 @@ func (s *Scalar) IsOne() bool {
 	return (*fr.Element)(s).IsOne()
 }
 
+// Uint64 returns the scalar as a uint64
+func (s *Scalar) Uint64() uint64 {
+	return (*fr.Element)(s).Uint64()
+}
+
+// SetUint64 sets the scalar from a uint64
+func (s *Scalar) SetUint64(val uint64) {
+	(*fr.Element)(s).SetUint64(val)
+}
+
 // Add adds two scalars
 func (s *Scalar) Add(other Scalar) Scalar {
 	var result fr.Element
@@ -107,6 +117,43 @@ func (s *Scalar) ToBigInt() *big.Int {
 func (s *Scalar) FromBigInt(i *big.Int) Scalar {
 	(*fr.Element)(s).SetBigInt(i)
 	return *s
+}
+
+// WalletSecrets contains the information about a wallet necessary to recover it
+type WalletSecrets struct {
+	// Id is the UUID of the wallet
+	Id uuid.UUID
+	// Keychain is the keychain used to manage the wallet
+	Keychain *Keychain
+	// BlinderSeed is the seed of the CSPRNG used to generate blinders and blinder shares
+	BlinderSeed Scalar
+	// ShareSeed is the seed of the CSPRNG used to generate wallet secret shares
+	ShareSeed Scalar
+}
+
+// DeriveWalletSecrets derives the wallet secrets from the given Ethereum private key
+func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecrets, error) {
+	walletId, err := DeriveWalletID(ethKey, chainId)
+	if err != nil {
+		return nil, err
+	}
+
+	keychain, err := DeriveKeychain(ethKey, chainId)
+	if err != nil {
+		return nil, err
+	}
+
+	blinderSeed, shareSeed, err := DeriveWalletSeeds(ethKey, chainId)
+	if err != nil {
+		return nil, err
+	}
+
+	return &WalletSecrets{
+		Id:          walletId,
+		Keychain:    keychain,
+		BlinderSeed: blinderSeed,
+		ShareSeed:   shareSeed,
+	}, nil
 }
 
 // WalletShare represents a secret share of a wallet, containing only the elements of a wallet that are stored on-chain
@@ -199,22 +246,18 @@ type Wallet struct {
 
 // NewEmptyWallet creates a new empty wallet
 func NewEmptyWallet(privateKey *ecdsa.PrivateKey, chainId uint64) (*Wallet, error) {
-	walletId, err := DeriveWalletID(privateKey, chainId)
+	secrets, err := DeriveWalletSecrets(privateKey, chainId)
 	if err != nil {
 		return nil, err
 	}
 
-	// Derive the keychain
-	keychain, err := DeriveKeychain(privateKey, chainId)
-	if err != nil {
-		return nil, err
-	}
+	return NewEmptyWalletFromSecrets(secrets)
+}
 
-	// Derive the seeds for secret shares and blinders
-	blinderSeed, shareSeed, err := DeriveWalletSeeds(privateKey, chainId)
-	if err != nil {
-		return nil, err
-	}
+// NewEmptyWalletFromSecrets creates a new wallet from the given wallet secrets
+func NewEmptyWalletFromSecrets(secrets *WalletSecrets) (*Wallet, error) {
+	walletId := secrets.Id
+	keychain := secrets.Keychain
 
 	// Setup a wallet with empty shares
 	emptyShare, err := EmptyWalletShare(keychain.PublicKeys)
@@ -223,8 +266,9 @@ func NewEmptyWallet(privateKey *ecdsa.PrivateKey, chainId uint64) (*Wallet, erro
 	}
 
 	// Reblind the wallet
-	blinder, blinderPrivateShare := walletBlinderFromSeed(blinderSeed)
-	privateShareScalars := walletSharesFromStream(shareSeed)
+	blinder, blinderPrivateShare := walletBlinderFromSeed(secrets.BlinderSeed)
+	privateShareScalars := walletSharesFromStream(secrets.ShareSeed)
+
 	privateShare, publicShare, err := emptyShare.SplitPublicPrivate(privateShareScalars, blinder)
 	if err != nil {
 		return nil, err

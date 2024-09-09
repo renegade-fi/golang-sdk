@@ -183,7 +183,7 @@ type PrivateKeychain struct {
 type PublicKeychain struct {
 	PkRoot  PublicSigningKey
 	PkMatch Scalar
-	Nonce   Uint64
+	Nonce   Scalar
 }
 
 // Keychain is a keychain for the API wallet
