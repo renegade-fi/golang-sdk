@@ -16,7 +16,7 @@ func TestFixedPoint(t *testing.T) {
 	originalFloat := rand.Float64() * 1000
 
 	// Convert to and from FixedPoint
-	fixedPoint := FromFloat(originalFloat)
+	fixedPoint := FixedPointFromFloat(originalFloat)
 	convertedFloat := fixedPoint.ToFloat()
 
 	// Check if the converted value is within tolerance of the original

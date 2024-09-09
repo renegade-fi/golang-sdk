@@ -93,6 +93,11 @@ func toScalarsStruct(v reflect.Value) ([]Scalar, error) {
 			continue
 		}
 
+		// Check for the scalar_serialize="skip" tag
+		if v.Type().Field(i).Tag.Get("scalar_serialize") == "skip" {
+			continue
+		}
+
 		// Convert the field to a Scalar
 		fieldScalars, err := ToScalarsRecursive(field.Addr().Interface())
 		if err != nil {
@@ -186,6 +191,12 @@ func fromScalarsStruct(v reflect.Value, scalars *ScalarIterator) error {
 		if !field.CanSet() {
 			continue
 		}
+
+		// Check for the scalar_serialize="skip" tag
+		if v.Type().Field(i).Tag.Get("scalar_serialize") == "skip" {
+			continue
+		}
+
 		if err := FromScalarsRecursive(field.Addr().Interface(), scalars); err != nil {
 			return err
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/google/uuid"
 )
 
 // OrderSide is an enum for the side of an order
@@ -40,6 +41,8 @@ func (s *OrderSide) NumScalars() int {
 
 // Order is an order in the Renegade system
 type Order struct {
+	// ID is the id of the order
+	ID uuid.UUID `scalar_serialize:"skip"`
 	// BaseMint is the erc20 address of the base asset
 	BaseMint Scalar
 	// QuoteMint is the erc20 address of the quote asset

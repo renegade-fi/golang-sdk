@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"errors"
 	"math/big"
 
@@ -11,6 +12,26 @@ import (
 
 // HmacKey is a symmetric key for HMAC-SHA256
 type HmacKey [32]byte
+
+// ToHexString converts the HMAC key to a hex string
+func (k *HmacKey) ToHexString() string {
+	return hex.EncodeToString(k[:])
+}
+
+// FromHexString converts a hex string to an HMAC key
+func (k *HmacKey) FromHexString(hexString string) (HmacKey, error) {
+	bytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		return HmacKey{}, err
+	}
+
+	if len(bytes) != 32 {
+		return HmacKey{}, errors.New("HMAC key must be 32 bytes")
+	}
+
+	copy(k[:], bytes)
+	return *k, nil
+}
 
 // PublicSigningKey is a verification key over the secp256k1 curve
 type PublicSigningKey ecdsa.PublicKey
@@ -50,8 +71,16 @@ func scalarLimbsToBigInt(limbs []Scalar) *big.Int {
 func (pk *PublicSigningKey) ToScalars() ([]Scalar, error) {
 	xScalars := bigintToScalarLimbs(*pk.X)
 	yScalars := bigintToScalarLimbs(*pk.Y)
-	if len(xScalars) != 2 || len(yScalars) != 2 {
+	if len(xScalars) > 2 || len(yScalars) > 2 {
 		return nil, errors.New("public key is not on the curve")
+	}
+
+	// Pad xScalars and yScalars to length 2 if needed
+	for len(xScalars) < 2 {
+		xScalars = append(xScalars, Scalar{})
+	}
+	for len(yScalars) < 2 {
+		yScalars = append(yScalars, Scalar{})
 	}
 
 	return []Scalar{xScalars[0], xScalars[1], yScalars[0], yScalars[1]}, nil
@@ -87,6 +116,26 @@ func (pk *PublicSigningKey) NumScalars() int {
 	return 4
 }
 
+// ToHexString converts the public key to a hex string
+func (pk *PublicSigningKey) ToHexString() string {
+	bytes := secp256k1.S256().Marshal(pk.X, pk.Y)
+	return hex.EncodeToString(bytes)
+}
+
+// FromHexString converts a hex string to a public key
+func (pk *PublicSigningKey) FromHexString(hexString string) (PublicSigningKey, error) {
+	bytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		return PublicSigningKey{}, err
+	}
+
+	x, y := secp256k1.S256().Unmarshal(bytes)
+	pk.X = x
+	pk.Y = y
+	pk.Curve = secp256k1.S256()
+	return *pk, nil
+}
+
 type PrivateSigningKey ecdsa.PrivateKey
 
 func (pk *PrivateSigningKey) ToScalars() ([]Scalar, error) {
@@ -105,6 +154,22 @@ func (pk *PrivateSigningKey) FromScalars(scalars *ScalarIterator) error {
 
 func (pk *PrivateSigningKey) NumScalars() int {
 	return 2
+}
+
+// ToHexString converts the private key to a hex string
+func (pk *PrivateSigningKey) ToHexString() string {
+	return hex.EncodeToString(pk.D.Bytes())
+}
+
+// FromHexString converts a hex string to a private key
+func (pk *PrivateSigningKey) FromHexString(hexString string) (PrivateSigningKey, error) {
+	bytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		return PrivateSigningKey{}, err
+	}
+
+	pk.D = new(big.Int).SetBytes(bytes)
+	return *pk, nil
 }
 
 // PrivateKeychain is a private keychain for the API wallet
@@ -132,4 +197,40 @@ type Keychain struct {
 type FeeEncryptionKey struct {
 	X Scalar
 	Y Scalar
+}
+
+// ToBytes converts the fee encryption key to a byte slice
+func (pk *FeeEncryptionKey) ToBytes() []byte {
+	xBytes, yBytes := pk.X.Bytes(), pk.Y.Bytes()
+	return append(xBytes[:], yBytes[:]...)
+}
+
+// FromBytes converts a byte slice to a fee encryption key
+func (pk *FeeEncryptionKey) FromBytes(bytes []byte) error {
+	if len(bytes) != 2*fr.Bytes {
+		return errors.New("fee encryption key must be 64 bytes")
+	}
+
+	var xBytes [fr.Bytes]byte
+	var yBytes [fr.Bytes]byte
+	copy(xBytes[:], bytes[:fr.Bytes])
+	copy(yBytes[:], bytes[fr.Bytes:])
+	pk.X.FromBytes(xBytes)
+	pk.Y.FromBytes(yBytes)
+	return nil
+}
+
+// ToHexString converts the fee encryption key to a hex string
+func (pk *FeeEncryptionKey) ToHexString() string {
+	return hex.EncodeToString(pk.ToBytes())
+}
+
+// FromHexString converts a hex string to a fee encryption key
+func (pk *FeeEncryptionKey) FromHexString(hexString string) error {
+	bytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		return err
+	}
+
+	return pk.FromBytes(bytes)
 }
