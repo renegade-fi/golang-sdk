@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"renegade.fi/golang-sdk/wallet"
 )
 
 const (
@@ -22,16 +24,16 @@ const (
 	signatureExpiration = 5 * time.Second
 )
 
-// Client represents an HTTP client with a base URL and auth key
-type Client struct {
+// HttpClient represents an HTTP client with a base URL and auth key
+type HttpClient struct {
 	baseURL    string
 	httpClient *http.Client
-	authKey    []byte
+	authKey    *wallet.HmacKey
 }
 
-// NewClient creates a new Client with the given base URL and auth key
-func NewClient(baseURL string, authKey []byte) *Client {
-	return &Client{
+// NewHttpClient creates a new HttpClient with the given base URL and auth key
+func NewHttpClient(baseURL string, authKey *wallet.HmacKey) *HttpClient {
+	return &HttpClient{
 		baseURL:    baseURL,
 		httpClient: &http.Client{},
 		authKey:    authKey,
@@ -39,17 +41,17 @@ func NewClient(baseURL string, authKey []byte) *Client {
 }
 
 // Get performs a GET request to the specified path
-func (c *Client) Get(path string, body interface{}) ([]byte, error) {
+func (c *HttpClient) Get(path string, body interface{}) ([]byte, error) {
 	return c.doRequest(http.MethodGet, path, body, false /* withAuth */)
 }
 
 // Post performs a POST request to the specified path
-func (c *Client) Post(path string, body interface{}) ([]byte, error) {
+func (c *HttpClient) Post(path string, body interface{}) ([]byte, error) {
 	return c.doRequest(http.MethodPost, path, body, false /* withAuth */)
 }
 
 // GetJSON performs a GET request and unmarshals the response into the provided interface
-func (c *Client) GetJSON(path string, body interface{}, response interface{}) error {
+func (c *HttpClient) GetJSON(path string, body interface{}, response interface{}) error {
 	respBody, err := c.doRequest(http.MethodGet, path, body, false /* withAuth */)
 	if err != nil {
 		return err
@@ -58,7 +60,7 @@ func (c *Client) GetJSON(path string, body interface{}, response interface{}) er
 }
 
 // PostJSON performs a POST request and unmarshals the response into the provided interface
-func (c *Client) PostJSON(path string, body interface{}, response interface{}) error {
+func (c *HttpClient) PostJSON(path string, body interface{}, response interface{}) error {
 	respBody, err := c.doRequest(http.MethodPost, path, body, false /* withAuth */)
 	if err != nil {
 		return err
@@ -67,7 +69,7 @@ func (c *Client) PostJSON(path string, body interface{}, response interface{}) e
 }
 
 // GetWithAuth performs an authenticated GET request
-func (c *Client) GetWithAuth(path string, body interface{}, response interface{}) error {
+func (c *HttpClient) GetWithAuth(path string, body interface{}, response interface{}) error {
 	respBody, err := c.doRequest(http.MethodGet, path, body, true /* withAuth */)
 	if err != nil {
 		return err
@@ -76,7 +78,7 @@ func (c *Client) GetWithAuth(path string, body interface{}, response interface{}
 }
 
 // PostWithAuth performs an authenticated POST request
-func (c *Client) PostWithAuth(path string, body interface{}, response interface{}) error {
+func (c *HttpClient) PostWithAuth(path string, body interface{}, response interface{}) error {
 	respBody, err := c.doRequest(http.MethodPost, path, body, true /* withAuth */)
 	if err != nil {
 		return err
@@ -85,7 +87,7 @@ func (c *Client) PostWithAuth(path string, body interface{}, response interface{
 }
 
 // doRequest performs an HTTP request with optional authentication
-func (c *Client) doRequest(method, path string, body interface{}, withAuth bool) ([]byte, error) {
+func (c *HttpClient) doRequest(method, path string, body interface{}, withAuth bool) ([]byte, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	// Marshal the body
@@ -131,14 +133,14 @@ func (c *Client) doRequest(method, path string, body interface{}, withAuth bool)
 }
 
 // addAuth adds authentication headers to the request
-func (c *Client) addAuth(req *http.Request, bodyBytes []byte) {
+func (c *HttpClient) addAuth(req *http.Request, bodyBytes []byte) {
 	// Compute the expiration time
 	expiration := time.Now().Add(signatureExpiration * time.Second).UnixMilli()
 	expirationBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(expirationBytes, uint64(expiration))
 
 	// Create the hmac
-	h := hmac.New(sha256.New, c.authKey)
+	h := hmac.New(sha256.New, c.authKey[:])
 	h.Write(append(bodyBytes, expirationBytes...))
 	signature := base64.RawStdEncoding.EncodeToString(h.Sum(nil))
 

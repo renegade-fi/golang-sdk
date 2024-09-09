@@ -242,11 +242,15 @@ type ApiKeychain struct {
 }
 
 // FromKeychain converts a wallet.Keychain to an ApiKeychain
-func (a *ApiKeychain) FromKeychain(k *wallet.Keychain) error {
-	a.PublicKeys.FromPublicKeychain(&k.PublicKeys)
-	a.PrivateKeys.FromPrivateKeychain(&k.PrivateKeys)
+func (a *ApiKeychain) FromKeychain(k *wallet.Keychain) (*ApiKeychain, error) {
+	if err := a.PublicKeys.FromPublicKeychain(&k.PublicKeys); err != nil {
+		return nil, err
+	}
+	if err := a.PrivateKeys.FromPrivateKeychain(&k.PrivateKeys); err != nil {
+		return nil, err
+	}
 	a.Nonce = uint64(k.PublicKeys.Nonce)
-	return nil
+	return a, nil
 }
 
 // ToKeychain converts an ApiKeychain to a wallet.Keychain
@@ -294,44 +298,40 @@ type ApiWallet struct {
 	Blinder [secretShareLimbCount]uint32 `json:"blinder"`
 }
 
-func (a *ApiWallet) FromWallet(w *wallet.Wallet) error {
+func (a *ApiWallet) FromWallet(w *wallet.Wallet) (*ApiWallet, error) {
 	a.Id = w.ID
 
 	// Convert orders
+	a.Orders = make([]ApiOrder, len(w.Orders))
 	for _, order := range w.Orders {
 		var apiOrder ApiOrder
 		if err := apiOrder.FromOrder(&order); err != nil {
-			return err
+			return nil, err
 		}
 		a.Orders = append(a.Orders, apiOrder)
 	}
 
-	fmt.Println("got orders")
-
 	// Convert balances
+	a.Balances = make([]ApiBalance, len(w.Balances))
 	for _, balance := range w.Balances {
 		var apiBalance ApiBalance
 		if err := apiBalance.FromBalance(&balance); err != nil {
-			return err
+			return nil, err
 		}
 		a.Balances = append(a.Balances, apiBalance)
 	}
 
-	fmt.Println("got balances")
-
 	// Convert keychain, managing cluster, and match fee
-	a.KeyChain.FromKeychain(w.Keychain)
+	if _, err := a.KeyChain.FromKeychain(w.Keychain); err != nil {
+		return nil, err
+	}
 	a.ManagingCluster = w.ManagingCluster.ToHexString()
 	a.MatchFee = w.MatchFee.ToReprDecimalString()
 
-	fmt.Println("got keychain, managing cluster, and match fee")
-
 	// Convert the public shares
-	fmt.Println("about to convert public shares")
 	publicShares, err := wallet.ToScalarsRecursive(&w.BlindedPublicShares)
-	fmt.Println("got public shares")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, share := range publicShares {
@@ -340,9 +340,8 @@ func (a *ApiWallet) FromWallet(w *wallet.Wallet) error {
 
 	// Convert the private shares
 	privateShares, err := wallet.ToScalarsRecursive(&w.PrivateShares)
-	fmt.Println("got private shares")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, share := range privateShares {
@@ -351,7 +350,7 @@ func (a *ApiWallet) FromWallet(w *wallet.Wallet) error {
 
 	// Convert the blinder
 	a.Blinder = scalarToUintLimbs(w.Blinder)
-	return nil
+	return a, nil
 }
 
 // ToWallet converts an ApiWallet to a Wallet
