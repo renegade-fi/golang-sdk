@@ -22,6 +22,7 @@ type TestStruct struct {
 
 func randomScalar() Scalar {
 	elt := fr.Element{}
+	// nolint: errcheck
 	elt.SetRandom()
 	return Scalar(elt)
 }

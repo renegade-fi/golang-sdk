@@ -250,7 +250,6 @@ func getExtendedSigBytes(message []byte, pkey *ecdsa.PrivateKey) ([]byte, error)
 // We use this method to reduce into a 256 bit field with sufficient entropy
 func extendTo64Bytes(b []byte) ([]byte, error) {
 	if len(b) != 32 {
-		fmt.Println("n_bytes", len(b))
 		return nil, fmt.Errorf("extendTo64Bytes: input must be 32 bytes")
 	}
 

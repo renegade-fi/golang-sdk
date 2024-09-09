@@ -17,8 +17,7 @@ func TestApiWalletConversion(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Convert to API wallet
-	apiWallet := ApiWallet{}
-	err = apiWallet.FromWallet(originalWallet)
+	apiWallet, err := new(ApiWallet).FromWallet(originalWallet)
 	assert.NoError(t, err)
 
 	// Convert back to wallet
