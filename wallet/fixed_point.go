@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
@@ -28,7 +29,7 @@ func NewFixedPoint(repr Scalar) FixedPoint {
 }
 
 // FromFloat creates a new fixed point number from a float
-func FromFloat(f float64) FixedPoint {
+func FixedPointFromFloat(f float64) FixedPoint {
 	bigF := big.NewFloat(f)
 	// Shift left by precisionBits
 	bigF.Mul(bigF, big.NewFloat(1<<precisionBits))
@@ -56,4 +57,24 @@ func (fp FixedPoint) ToFloat() float64 {
 
 	f, _ := bigF.Float64()
 	return f
+}
+
+// ToDecimalString converts a fixed point number to the base10 string representation of its `repr`
+func (fp FixedPoint) ToReprDecimalString() string {
+	reprBigint := fp.Repr.ToBigInt()
+
+	// Convert to string with 10 decimal places
+	return reprBigint.Text(10 /* base */)
+}
+
+// FromReprDecimalString creates a new fixed point number from a decimal string
+func (fp *FixedPoint) FromReprDecimalString(s string) (FixedPoint, error) {
+	reprBigint, ok := new(big.Int).SetString(s, 10)
+	if !ok {
+		return FixedPoint{}, fmt.Errorf("failed to convert decimal string to big.Int")
+	}
+
+	repr := new(Scalar).FromBigInt(reprBigint)
+	fp.Repr = repr
+	return *fp, nil
 }

@@ -1,17 +1,19 @@
-package api_wallet
+package api_types
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/google/uuid"
+
+	"renegade.fi/golang-sdk/wallet"
 )
 
 // The number of u32 limbs in the serialized form of a secret share
 const secretShareLimbCount = 8 // 256 bits
 
-type Scalar fr.Element
 type Amount big.Int
 
 func (a *Amount) String() string {
@@ -35,21 +37,27 @@ func (a *Amount) UnmarshalJSON(b []byte) error {
 	return a.SetString(string(b), 10)
 }
 
-// ApiOrderSide represents the side of an order (buy or sell)
-type ApiOrderSide uint8
+// orderSideFromScalar converts a wallet.Scalar to an order side
+func orderSideFromScalar(s wallet.Scalar) (string, error) {
+	if s.IsZero() {
+		return "Buy", nil
+	} else if s.IsOne() {
+		return "Sell", nil
+	}
 
-const (
-	Buy ApiOrderSide = iota
-	Sell
-)
+	return "", fmt.Errorf("invalid order side: %s", s.ToHexString())
+}
 
-// ApiOrderType represents the type of an order (midpoint or limit)
-type ApiOrderType uint8
+// orderSideToScalar converts an order side to a wallet.Scalar
+func orderSideToScalar(side string) (wallet.Scalar, error) {
+	if side == "Buy" {
+		return wallet.Scalar(fr.NewElement(0)), nil
+	} else if side == "Sell" {
+		return wallet.Scalar(fr.NewElement(1)), nil
+	}
 
-const (
-	Midpoint ApiOrderType = iota
-	Limit
-)
+	return wallet.Scalar{}, fmt.Errorf("invalid order side: %s", side)
+}
 
 // ApiOrder is an order in a Renegade wallet
 type ApiOrder struct {
@@ -71,6 +79,43 @@ type ApiOrder struct {
 	WorstCasePrice string `json:"worst_case_price"`
 }
 
+// FromOrder converts a wallet.Order to an ApiOrder
+func (a *ApiOrder) FromOrder(o *wallet.Order) error {
+	a.Id = o.ID
+	a.BaseMint = o.BaseMint.ToHexString()
+	a.QuoteMint = o.QuoteMint.ToHexString()
+	a.Amount = Amount(*o.Amount.ToBigInt())
+	side, err := orderSideFromScalar(o.Side)
+	if err != nil {
+		return err
+	}
+
+	a.Side = side
+	a.WorstCasePrice = o.WorstCasePrice.ToReprDecimalString()
+
+	return nil
+}
+
+// ToOrder converts an ApiOrder to a wallet.Order
+func (a *ApiOrder) ToOrder(o *wallet.Order) error {
+	o.ID = a.Id
+	if _, err := o.BaseMint.FromHexString(a.BaseMint); err != nil {
+		return err
+	}
+	if _, err := o.QuoteMint.FromHexString(a.QuoteMint); err != nil {
+		return err
+	}
+
+	o.Amount = new(wallet.Scalar).FromBigInt((*big.Int)(&a.Amount))
+	side, err := orderSideToScalar(a.Side)
+	if err != nil {
+		return err
+	}
+
+	o.Side = side
+	return nil
+}
+
 // ApiBalance is a balance in a Renegade wallet
 type ApiBalance struct {
 	// The mint (erc20 address) of the asset
@@ -83,6 +128,28 @@ type ApiBalance struct {
 	ProtocolFeeBalance Amount `json:"protocol_fee_balance"`
 }
 
+// FromBalance converts a wallet.Balance to an ApiBalance
+func (a *ApiBalance) FromBalance(b *wallet.Balance) error {
+	a.Mint = b.Mint.ToHexString()
+	a.Amount = Amount(*b.Amount.ToBigInt())
+	a.RelayerFeeBalance = Amount(*b.RelayerFeeBalance.ToBigInt())
+	a.ProtocolFeeBalance = Amount(*b.ProtocolFeeBalance.ToBigInt())
+
+	return nil
+}
+
+// ToBalance converts an ApiBalance to a wallet.Balance
+func (a *ApiBalance) ToBalance(b *wallet.Balance) error {
+	if _, err := b.Mint.FromHexString(a.Mint); err != nil {
+		return err
+	}
+	b.Amount = new(wallet.Scalar).FromBigInt((*big.Int)(&a.Amount))
+	b.RelayerFeeBalance = new(wallet.Scalar).FromBigInt((*big.Int)(&a.RelayerFeeBalance))
+	b.ProtocolFeeBalance = new(wallet.Scalar).FromBigInt((*big.Int)(&a.ProtocolFeeBalance))
+
+	return nil
+}
+
 // ApiPublicKeychain is a public keychain in the Renegade system
 type ApiPublicKeychain struct {
 	// The public root key of the wallet
@@ -91,6 +158,29 @@ type ApiPublicKeychain struct {
 	// The public match key of the wallet
 	// As a hex string
 	PkMatch string `json:"pk_match"`
+}
+
+func (a *ApiPublicKeychain) FromPublicKeychain(pk *wallet.PublicKeychain) error {
+	a.PkRoot = pk.PkRoot.ToHexString()
+	a.PkMatch = pk.PkMatch.ToHexString()
+
+	return nil
+}
+
+func (a *ApiPublicKeychain) ToPublicKeychain() (*wallet.PublicKeychain, error) {
+	pkRoot, err := new(wallet.PublicSigningKey).FromHexString(a.PkRoot)
+	if err != nil {
+		return nil, err
+	}
+	pkMatch, err := new(wallet.Scalar).FromHexString(a.PkMatch)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wallet.PublicKeychain{
+		PkRoot:  pkRoot,
+		PkMatch: pkMatch,
+	}, nil
 }
 
 // ApiPrivateKeychain represents a private keychain for the API wallet
@@ -106,6 +196,41 @@ type ApiPrivateKeychain struct {
 	SymmetricKey string `json:"symmetric_key"`
 }
 
+// FromPrivateKeychain converts a wallet.PrivateKeychain to an ApiPrivateKeychain
+func (a *ApiPrivateKeychain) FromPrivateKeychain(pk *wallet.PrivateKeychain) error {
+	if pk.SkRoot != nil {
+		skRootHex := pk.SkRoot.ToHexString()
+		a.SkRoot = &skRootHex
+	}
+
+	a.SkMatch = pk.SkMatch.ToHexString()
+	a.SymmetricKey = pk.SymmetricKey.ToHexString()
+
+	return nil
+}
+
+// ToPrivateKeychain converts an ApiPrivateKeychain to a wallet.PrivateKeychain
+func (a *ApiPrivateKeychain) ToPrivateKeychain() (*wallet.PrivateKeychain, error) {
+	skRoot, err := new(wallet.PrivateSigningKey).FromHexString(*a.SkRoot)
+	if err != nil {
+		return nil, err
+	}
+	skMatch, err := new(wallet.Scalar).FromHexString(a.SkMatch)
+	if err != nil {
+		return nil, err
+	}
+	symmetricKey, err := new(wallet.HmacKey).FromHexString(a.SymmetricKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &wallet.PrivateKeychain{
+		SkRoot:       &skRoot,
+		SkMatch:      skMatch,
+		SymmetricKey: symmetricKey,
+	}, nil
+}
+
 // ApiKeychain represents a keychain API type that maintains all keys as hex strings
 type ApiKeychain struct {
 	// The public keychain
@@ -114,6 +239,34 @@ type ApiKeychain struct {
 	PrivateKeys ApiPrivateKeychain `json:"private_keys"`
 	// The nonce of the keychain
 	Nonce uint64 `json:"nonce"`
+}
+
+// FromKeychain converts a wallet.Keychain to an ApiKeychain
+func (a *ApiKeychain) FromKeychain(k *wallet.Keychain) error {
+	a.PublicKeys.FromPublicKeychain(&k.PublicKeys)
+	a.PrivateKeys.FromPrivateKeychain(&k.PrivateKeys)
+	a.Nonce = uint64(k.PublicKeys.Nonce)
+	return nil
+}
+
+// ToKeychain converts an ApiKeychain to a wallet.Keychain
+func (a *ApiKeychain) ToKeychain() (*wallet.Keychain, error) {
+	publicKeys, err := a.PublicKeys.ToPublicKeychain()
+	if err != nil {
+		return nil, err
+	}
+	publicKeys.Nonce = wallet.Uint64(a.Nonce)
+
+	privateKeys, err := a.PrivateKeys.ToPrivateKeychain()
+	if err != nil {
+		return nil, err
+	}
+	privateKeys.SkRoot.PublicKey = ecdsa.PublicKey(publicKeys.PkRoot)
+
+	return &wallet.Keychain{
+		PublicKeys:  *publicKeys,
+		PrivateKeys: *privateKeys,
+	}, nil
 }
 
 // ApiWallet is a wallet in the Renegade system
@@ -139,4 +292,123 @@ type ApiWallet struct {
 	PrivateShares [][secretShareLimbCount]uint32 `json:"private_shares"`
 	// The wallet blinder, used to blind wallet secret shares
 	Blinder [secretShareLimbCount]uint32 `json:"blinder"`
+}
+
+func (a *ApiWallet) FromWallet(w *wallet.Wallet) error {
+	a.Id = w.ID
+
+	// Convert orders
+	for _, order := range w.Orders {
+		var apiOrder ApiOrder
+		if err := apiOrder.FromOrder(&order); err != nil {
+			return err
+		}
+		a.Orders = append(a.Orders, apiOrder)
+	}
+
+	fmt.Println("got orders")
+
+	// Convert balances
+	for _, balance := range w.Balances {
+		var apiBalance ApiBalance
+		if err := apiBalance.FromBalance(&balance); err != nil {
+			return err
+		}
+		a.Balances = append(a.Balances, apiBalance)
+	}
+
+	fmt.Println("got balances")
+
+	// Convert keychain, managing cluster, and match fee
+	a.KeyChain.FromKeychain(w.Keychain)
+	a.ManagingCluster = w.ManagingCluster.ToHexString()
+	a.MatchFee = w.MatchFee.ToReprDecimalString()
+
+	fmt.Println("got keychain, managing cluster, and match fee")
+
+	// Convert the public shares
+	fmt.Println("about to convert public shares")
+	publicShares, err := wallet.ToScalarsRecursive(&w.BlindedPublicShares)
+	fmt.Println("got public shares")
+	if err != nil {
+		return err
+	}
+
+	for _, share := range publicShares {
+		a.BlindedPublicShares = append(a.BlindedPublicShares, scalarToUintLimbs(share))
+	}
+
+	// Convert the private shares
+	privateShares, err := wallet.ToScalarsRecursive(&w.PrivateShares)
+	fmt.Println("got private shares")
+	if err != nil {
+		return err
+	}
+
+	for _, share := range privateShares {
+		a.PrivateShares = append(a.PrivateShares, scalarToUintLimbs(share))
+	}
+
+	// Convert the blinder
+	a.Blinder = scalarToUintLimbs(w.Blinder)
+	return nil
+}
+
+// ToWallet converts an ApiWallet to a Wallet
+func (a *ApiWallet) ToWallet() (*wallet.Wallet, error) {
+	w := &wallet.Wallet{}
+
+	// Convert ID
+	w.ID = a.Id
+
+	// Convert orders
+	w.Orders = make([]wallet.Order, len(a.Orders))
+	for i, apiOrder := range a.Orders {
+		if err := apiOrder.ToOrder(&w.Orders[i]); err != nil {
+			return nil, err
+		}
+	}
+
+	// Convert balances
+	w.Balances = make([]wallet.Balance, len(a.Balances))
+	for i, apiBalance := range a.Balances {
+		if err := apiBalance.ToBalance(&w.Balances[i]); err != nil {
+			return nil, err
+		}
+	}
+
+	// Convert keychain, managing cluster, and match fee
+	keychain, err := a.KeyChain.ToKeychain()
+	if err != nil {
+		return nil, err
+	}
+	w.Keychain = keychain
+	if err := w.ManagingCluster.FromHexString(a.ManagingCluster); err != nil {
+		return nil, err
+	}
+	if _, err := w.MatchFee.FromReprDecimalString(a.MatchFee); err != nil {
+		return nil, err
+	}
+
+	// Convert the public shares
+	publicShares := make([]wallet.Scalar, len(a.BlindedPublicShares))
+	for i, limbs := range a.BlindedPublicShares {
+		publicShares[i] = scalarFromUintLimbs(limbs)
+	}
+	if err := wallet.FromScalarsRecursive(&w.BlindedPublicShares, wallet.NewScalarIterator(publicShares)); err != nil {
+		return nil, err
+	}
+
+	// Convert the private shares
+	privateShares := make([]wallet.Scalar, len(a.PrivateShares))
+	for i, limbs := range a.PrivateShares {
+		privateShares[i] = scalarFromUintLimbs(limbs)
+	}
+	if err := wallet.FromScalarsRecursive(&w.PrivateShares, wallet.NewScalarIterator(privateShares)); err != nil {
+		return nil, err
+	}
+
+	// Convert the blinder
+	w.Blinder = scalarFromUintLimbs(a.Blinder)
+	return w, nil
 }

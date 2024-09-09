@@ -2,7 +2,9 @@ package wallet
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
 	"fmt"
+	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/google/uuid"
@@ -22,6 +24,28 @@ const (
 // Scalar is a scalar field element from the bn254 curve
 type Scalar fr.Element
 
+// RandomScalar generates a random scalar
+func RandomScalar() (Scalar, error) {
+	var res fr.Element
+	_, err := res.SetRandom()
+	if err != nil {
+		return Scalar{}, err
+	}
+
+	return Scalar(res), nil
+
+}
+
+// IsZero returns whether the scalar is zero
+func (s *Scalar) IsZero() bool {
+	return (*fr.Element)(s).IsZero()
+}
+
+// IsOne returns whether the scalar is one
+func (s *Scalar) IsOne() bool {
+	return (*fr.Element)(s).IsOne()
+}
+
 // Add adds two scalars
 func (s *Scalar) Add(other Scalar) Scalar {
 	var result fr.Element
@@ -40,6 +64,49 @@ func (s *Scalar) Sub(other Scalar) Scalar {
 	result.Sub(&fr1, &fr2)
 
 	return Scalar(result)
+}
+
+// Bytes returns the bytes representation of the scalar in big-endian order
+func (s *Scalar) Bytes() [fr.Bytes]byte {
+	return (*fr.Element)(s).Bytes()
+}
+
+// FromBytes sets the scalar from a big-endian byte slice
+func (s *Scalar) FromBytes(bytes [fr.Bytes]byte) {
+	(*fr.Element)(s).SetBytes(bytes[:])
+}
+
+// HexString returns the hex string representation of the scalar
+func (s *Scalar) ToHexString() string {
+	bytes := s.Bytes()
+	return hex.EncodeToString(bytes[:])
+}
+
+// FromHexString sets the scalar from a hex string
+func (s *Scalar) FromHexString(hexString string) (Scalar, error) {
+	bytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		return Scalar{}, err
+	}
+
+	var fixedBytes [fr.Bytes]byte
+	copy(fixedBytes[fr.Bytes-len(bytes):], bytes)
+	s.FromBytes(fixedBytes)
+
+	return *s, nil
+}
+
+// ToBigInt converts the scalar to a big.Int
+func (s *Scalar) ToBigInt() *big.Int {
+	var res big.Int
+	(*fr.Element)(s).BigInt(&res)
+	return &res
+}
+
+// FromBigInt sets the scalar from a big.Int
+func (s *Scalar) FromBigInt(i *big.Int) Scalar {
+	(*fr.Element)(s).SetBigInt(i)
+	return *s
 }
 
 // WalletShare represents a secret share of a wallet, containing only the elements of a wallet that are stored on-chain
