@@ -197,7 +197,7 @@ type ApiPrivateKeychain struct {
 }
 
 // FromPrivateKeychain converts a wallet.PrivateKeychain to an ApiPrivateKeychain
-func (a *ApiPrivateKeychain) FromPrivateKeychain(pk *wallet.PrivateKeychain) error {
+func (a *ApiPrivateKeychain) FromPrivateKeychain(pk *wallet.PrivateKeychain) (*ApiPrivateKeychain, error) {
 	if pk.SkRoot != nil {
 		skRootHex := pk.SkRoot.ToHexString()
 		a.SkRoot = &skRootHex
@@ -206,7 +206,7 @@ func (a *ApiPrivateKeychain) FromPrivateKeychain(pk *wallet.PrivateKeychain) err
 	a.SkMatch = pk.SkMatch.ToHexString()
 	a.SymmetricKey = pk.SymmetricKey.ToHexString()
 
-	return nil
+	return a, nil
 }
 
 // ToPrivateKeychain converts an ApiPrivateKeychain to a wallet.PrivateKeychain
@@ -246,10 +246,10 @@ func (a *ApiKeychain) FromKeychain(k *wallet.Keychain) (*ApiKeychain, error) {
 	if err := a.PublicKeys.FromPublicKeychain(&k.PublicKeys); err != nil {
 		return nil, err
 	}
-	if err := a.PrivateKeys.FromPrivateKeychain(&k.PrivateKeys); err != nil {
+	if _, err := a.PrivateKeys.FromPrivateKeychain(&k.PrivateKeys); err != nil {
 		return nil, err
 	}
-	a.Nonce = uint64(k.PublicKeys.Nonce)
+	a.Nonce = k.PublicKeys.Nonce.Uint64()
 	return a, nil
 }
 
@@ -259,7 +259,7 @@ func (a *ApiKeychain) ToKeychain() (*wallet.Keychain, error) {
 	if err != nil {
 		return nil, err
 	}
-	publicKeys.Nonce = wallet.Uint64(a.Nonce)
+	publicKeys.Nonce.SetUint64(a.Nonce)
 
 	privateKeys, err := a.PrivateKeys.ToPrivateKeychain()
 	if err != nil {
@@ -335,7 +335,7 @@ func (a *ApiWallet) FromWallet(w *wallet.Wallet) (*ApiWallet, error) {
 	}
 
 	for _, share := range publicShares {
-		a.BlindedPublicShares = append(a.BlindedPublicShares, scalarToUintLimbs(share))
+		a.BlindedPublicShares = append(a.BlindedPublicShares, ScalarToUintLimbs(share))
 	}
 
 	// Convert the private shares
@@ -345,11 +345,11 @@ func (a *ApiWallet) FromWallet(w *wallet.Wallet) (*ApiWallet, error) {
 	}
 
 	for _, share := range privateShares {
-		a.PrivateShares = append(a.PrivateShares, scalarToUintLimbs(share))
+		a.PrivateShares = append(a.PrivateShares, ScalarToUintLimbs(share))
 	}
 
 	// Convert the blinder
-	a.Blinder = scalarToUintLimbs(w.Blinder)
+	a.Blinder = ScalarToUintLimbs(w.Blinder)
 	return a, nil
 }
 
@@ -392,7 +392,7 @@ func (a *ApiWallet) ToWallet() (*wallet.Wallet, error) {
 	// Convert the public shares
 	publicShares := make([]wallet.Scalar, len(a.BlindedPublicShares))
 	for i, limbs := range a.BlindedPublicShares {
-		publicShares[i] = scalarFromUintLimbs(limbs)
+		publicShares[i] = ScalarFromUintLimbs(limbs)
 	}
 	if err := wallet.FromScalarsRecursive(&w.BlindedPublicShares, wallet.NewScalarIterator(publicShares)); err != nil {
 		return nil, err
@@ -401,13 +401,13 @@ func (a *ApiWallet) ToWallet() (*wallet.Wallet, error) {
 	// Convert the private shares
 	privateShares := make([]wallet.Scalar, len(a.PrivateShares))
 	for i, limbs := range a.PrivateShares {
-		privateShares[i] = scalarFromUintLimbs(limbs)
+		privateShares[i] = ScalarFromUintLimbs(limbs)
 	}
 	if err := wallet.FromScalarsRecursive(&w.PrivateShares, wallet.NewScalarIterator(privateShares)); err != nil {
 		return nil, err
 	}
 
 	// Convert the blinder
-	w.Blinder = scalarFromUintLimbs(a.Blinder)
+	w.Blinder = ScalarFromUintLimbs(a.Blinder)
 	return w, nil
 }

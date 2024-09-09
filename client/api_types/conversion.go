@@ -6,8 +6,8 @@ import (
 	"renegade.fi/golang-sdk/wallet"
 )
 
-// scalarToUintLimbs converts a scalar to an array of uint32 limbs
-func scalarToUintLimbs(s wallet.Scalar) [secretShareLimbCount]uint32 {
+// ScalarToUintLimbs converts a scalar to an array of uint32 limbs
+func ScalarToUintLimbs(s wallet.Scalar) ScalarLimbs {
 	bigint := s.ToBigInt()
 	limbs := [secretShareLimbCount]uint32{}
 	for i := 0; i < secretShareLimbCount; i++ {
@@ -22,8 +22,8 @@ func scalarToUintLimbs(s wallet.Scalar) [secretShareLimbCount]uint32 {
 	return limbs
 }
 
-// scalarFromUintLimbs converts an array of uint32 limbs to a scalar
-func scalarFromUintLimbs(limbs [secretShareLimbCount]uint32) wallet.Scalar {
+// ScalarFromUintLimbs converts an array of uint32 limbs to a scalar
+func ScalarFromUintLimbs(limbs ScalarLimbs) wallet.Scalar {
 	bigint := new(big.Int)
 	for i := secretShareLimbCount - 1; i >= 0; i-- {
 		bigint.Lsh(bigint, 32)

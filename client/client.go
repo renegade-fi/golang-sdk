@@ -13,14 +13,32 @@ const (
 
 // Client represents a client for the renegade API
 type RenegadeClient struct {
+	// chainId is the chain ID of the network
+	chainId uint64
+	// walletInfo is the information about the wallet necessary to recover it
+	walletSecrets *wallet.WalletSecrets
+	// httpClient is the HTTP client used to make requests to the renegade API
 	httpClient *HttpClient
 }
 
 // NewRenegadeClient creates a new Client with the given base URL and auth key
-func NewRenegadeClient(baseURL string, authKey *wallet.HmacKey) *RenegadeClient {
-	return &RenegadeClient{
-		httpClient: NewHttpClient(baseURL, authKey),
+func NewRenegadeClient(baseURL string, ethKey *ecdsa.PrivateKey) (*RenegadeClient, error) {
+	return NewRenegadeClientWithChainId(baseURL, ethKey, arbitrumChainId)
+}
+
+// NewRenegadeClientWithChainId creates a new Client with the given base URL, auth key, and chain ID
+func NewRenegadeClientWithChainId(baseURL string, ethKey *ecdsa.PrivateKey, chainId uint64) (*RenegadeClient, error) {
+	walletInfo, err := wallet.DeriveWalletSecrets(ethKey, chainId)
+	if err != nil {
+		return nil, err
 	}
+
+	authKey := walletInfo.Keychain.PrivateKeys.SymmetricKey
+	return &RenegadeClient{
+		chainId:       chainId,
+		walletSecrets: walletInfo,
+		httpClient:    NewHttpClient(baseURL, &authKey),
+	}, nil
 }
 
 // GetWallet retrieves a wallet from the relayer.
@@ -36,20 +54,48 @@ func NewRenegadeClient(baseURL string, authKey *wallet.HmacKey) *RenegadeClient 
 // The method first derives the wallet ID using the provided Ethereum key and chain ID.
 // It then constructs the API path and sends a GET request to the relayer.
 // If successful, it returns the wallet data in the ApiWallet format.
-func (c *RenegadeClient) GetWallet(ethKey *ecdsa.PrivateKey, chainId uint64) (*api_types.ApiWallet, error) {
-	walletId, err := wallet.DeriveWalletID(ethKey, chainId)
-	if err != nil {
-		return nil, err
-	}
-
+func (c *RenegadeClient) GetWallet() (*api_types.ApiWallet, error) {
+	walletId := c.walletSecrets.Id
 	path := api_types.BuildGetWalletPath(walletId)
+
 	resp := api_types.GetWalletResponse{}
-	err = c.httpClient.GetWithAuth(path, nil /* body */, &resp)
+	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
 	if err != nil {
 		return nil, err
 	}
 
 	return &resp.Wallet, nil
+}
+
+// LookupWallet looks up a wallet in the relayer from contract state
+func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error) {
+	walletId := c.walletSecrets.Id
+	path := api_types.LookupWalletPath
+
+	// Build the request
+	keys, err := new(api_types.ApiPrivateKeychain).FromPrivateKeychain(&c.walletSecrets.Keychain.PrivateKeys)
+	if err != nil {
+		return nil, err
+	}
+	keys.SkRoot = nil // Omit the root key
+
+	blinderSeed := api_types.ScalarToUintLimbs(c.walletSecrets.BlinderSeed)
+	shareSeed := api_types.ScalarToUintLimbs(c.walletSecrets.ShareSeed)
+	request := api_types.LookupWalletRequest{
+		WalletId:        walletId,
+		BlinderSeed:     blinderSeed,
+		ShareSeed:       shareSeed,
+		PrivateKeychain: *keys,
+	}
+
+	// Post to the relayer
+	resp := api_types.LookupWalletResponse{}
+	err = c.httpClient.PostWithAuth(path, request, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
 }
 
 // CreateWallet creates a new wallet derived with provided Ethereum private key.
@@ -64,13 +110,9 @@ func (c *RenegadeClient) GetWallet(ethKey *ecdsa.PrivateKey, chainId uint64) (*a
 // The method generates a new Renegade wallet associated with the given Ethereum key,
 // submits a creation request to the Renegade API, and returns the response.
 // This wallet can be used for private transactions within the Renegade network.
-func (c *RenegadeClient) CreateWallet(ethKey *ecdsa.PrivateKey) (*api_types.CreateWalletResponse, error) {
-	return c.CreateWalletWithChainId(ethKey, arbitrumChainId)
-}
-
-func (c *RenegadeClient) CreateWalletWithChainId(ethKey *ecdsa.PrivateKey, chainId uint64) (*api_types.CreateWalletResponse, error) {
+func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error) {
 	// Create a new empty wallet from the base key
-	newWallet, err := wallet.NewEmptyWallet(ethKey, chainId)
+	newWallet, err := wallet.NewEmptyWalletFromSecrets(c.walletSecrets)
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +121,8 @@ func (c *RenegadeClient) CreateWalletWithChainId(ethKey *ecdsa.PrivateKey, chain
 	if err != nil {
 		return nil, err
 	}
+	// Omit the root key
+	apiWallet.KeyChain.PrivateKeys.SkRoot = nil
 
 	// Post the wallet to the relayer
 	request := api_types.CreateWalletRequest{

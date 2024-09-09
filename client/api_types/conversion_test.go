@@ -13,15 +13,15 @@ func TestScalarUintLimbConversion(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Convert to and from uint32 limbs
-	limbs := scalarToUintLimbs(scalar)
-	recoveredScalar := scalarFromUintLimbs(limbs)
+	limbs := ScalarToUintLimbs(scalar)
+	recoveredScalar := ScalarFromUintLimbs(limbs)
 
 	// Assert equality
 	assert.Equal(t, scalar, recoveredScalar, "Recovered scalar should match original")
 
 	// Test with zero
 	zeroScalar := wallet.Scalar(fr.NewElement(0))
-	zeroLimbs := scalarToUintLimbs(zeroScalar)
-	recoveredZeroScalar := scalarFromUintLimbs(zeroLimbs)
+	zeroLimbs := ScalarToUintLimbs(zeroScalar)
+	recoveredZeroScalar := ScalarFromUintLimbs(zeroLimbs)
 	assert.Equal(t, zeroScalar, recoveredZeroScalar, "Recovered zero scalar should match original")
 }
