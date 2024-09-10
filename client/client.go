@@ -43,17 +43,13 @@ func NewRenegadeClientWithChainId(baseURL string, ethKey *ecdsa.PrivateKey, chai
 
 // GetWallet retrieves a wallet from the relayer.
 //
-// Parameters:
-//   - ethKey: *ecdsa.PrivateKey - The Ethereum private key associated with the wallet.
-//   - chainId: uint64 - The chain ID of the network.
-//
 // Returns:
 //   - *api_types.ApiWallet: The retrieved wallet, if successful.
 //   - error: An error if the retrieval fails, nil otherwise.
 //
-// The method first derives the wallet ID using the provided Ethereum key and chain ID.
-// It then constructs the API path and sends a GET request to the relayer.
-// If successful, it returns the wallet data in the ApiWallet format.
+// The method uses the client's wallet secrets to construct the API path
+// and sends a GET request to the relayer. If successful, it returns the
+// wallet data in the ApiWallet format.
 func (c *RenegadeClient) GetWallet() (*api_types.ApiWallet, error) {
 	walletId := c.walletSecrets.Id
 	path := api_types.BuildGetWalletPath(walletId)
@@ -67,7 +63,18 @@ func (c *RenegadeClient) GetWallet() (*api_types.ApiWallet, error) {
 	return &resp.Wallet, nil
 }
 
-// LookupWallet looks up a wallet in the relayer from contract state
+// LookupWallet looks up a wallet in the relayer from contract state.
+//
+// This method sends a request to the relayer to retrieve wallet information
+// from the blockchain. It uses the client's wallet secrets to construct the request.
+//
+// Returns:
+//   - *api_types.LookupWalletResponse: Contains the wallet ID and task ID if successful.
+//   - error: An error if the lookup fails, nil otherwise.
+//
+// The method constructs a LookupWalletRequest with the wallet ID, blinder seed,
+// share seed, and private keychain (excluding the root key). It then sends a POST
+// request to the relayer and returns the response.
 func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error) {
 	walletId := c.walletSecrets.Id
 	path := api_types.LookupWalletPath
@@ -98,16 +105,39 @@ func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error)
 	return &resp, nil
 }
 
-// CreateWallet creates a new wallet derived with provided Ethereum private key.
+// RefreshWallet refreshes the relayer's view of the wallet's state by looking up the wallet on-chain.
 //
-// Parameters:
-//   - ethKey: The Ethereum private key used to create and control the wallet
+// This method sends a request to the relayer to update its local state with the latest on-chain
+// information for the wallet associated with the client. It's useful for synchronizing the
+// relayer's view with the current blockchain state, especially after on-chain transactions.
+//
+// Returns:
+//   - *api_types.RefreshWalletResponse: Contains the task ID for the refresh operation.
+//   - error: An error if the refresh operation fails, nil otherwise.
+//
+// The method uses the client's wallet ID to construct the API path and sends a POST request
+// to the relayer. If successful, it returns the response containing the task ID for tracking
+// the refresh operation.
+func (c *RenegadeClient) RefreshWallet() (*api_types.RefreshWalletResponse, error) {
+	walletId := c.walletSecrets.Id
+	path := api_types.BuildRefreshWalletPath(walletId)
+
+	resp := api_types.RefreshWalletResponse{}
+	err := c.httpClient.PostWithAuth(path, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+// CreateWallet creates a new wallet derived from the client's wallet secrets.
 //
 // Returns:
 //   - *api_types.CreateWalletResponse: Contains the task ID and wallet ID of the created wallet
 //   - error: An error if the wallet creation fails, nil otherwise
 //
-// The method generates a new Renegade wallet associated with the given Ethereum key,
+// The method generates a new Renegade wallet using the client's wallet secrets,
 // submits a creation request to the Renegade API, and returns the response.
 // This wallet can be used for private transactions within the Renegade network.
 func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error) {

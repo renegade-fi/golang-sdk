@@ -11,6 +11,8 @@ const (
 	GetWalletPath = "/v0/wallet/%s"
 	// LookupWalletPath is the path for the LookupWallet action
 	LookupWalletPath = "/v0/wallet/lookup"
+	// RefreshWalletPath is the path for the RefreshWallet action
+	RefreshWalletPath = "/v0/wallet/%s/refresh"
 	// CreateWalletPath is the path for the CreateWallet action
 	CreateWalletPath = "/v0/wallet"
 )
@@ -20,6 +22,11 @@ type ScalarLimbs [secretShareLimbCount]uint32
 // buildGetWalletPath builds the path for the GetWallet action
 func BuildGetWalletPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(GetWalletPath, walletId)
+}
+
+// buildRefreshWalletPath builds the path for the RefreshWallet action
+func BuildRefreshWalletPath(walletId uuid.UUID) string {
+	return fmt.Sprintf(RefreshWalletPath, walletId)
 }
 
 // GetWalletResponse is the response body for a GetWallet request
@@ -39,6 +46,11 @@ type LookupWalletRequest struct {
 type LookupWalletResponse struct {
 	WalletId uuid.UUID `json:"wallet_id"`
 	TaskId   uuid.UUID `json:"task_id"`
+}
+
+// RefreshWalletResponse is the response body for a RefreshWallet request
+type RefreshWalletResponse struct {
+	TaskId uuid.UUID `json:"task_id"`
 }
 
 // CreateWalletRequest is the request body for the CreateWallet action
