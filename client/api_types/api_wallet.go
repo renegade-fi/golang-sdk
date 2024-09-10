@@ -80,25 +80,25 @@ type ApiOrder struct {
 }
 
 // FromOrder converts a wallet.Order to an ApiOrder
-func (a *ApiOrder) FromOrder(o *wallet.Order) error {
-	a.Id = o.ID
+func (a *ApiOrder) FromOrder(o *wallet.Order) (*ApiOrder, error) {
+	a.Id = o.Id
 	a.BaseMint = o.BaseMint.ToHexString()
 	a.QuoteMint = o.QuoteMint.ToHexString()
 	a.Amount = Amount(*o.Amount.ToBigInt())
 	side, err := orderSideFromScalar(o.Side)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	a.Side = side
 	a.WorstCasePrice = o.WorstCasePrice.ToReprDecimalString()
 
-	return nil
+	return a, nil
 }
 
 // ToOrder converts an ApiOrder to a wallet.Order
 func (a *ApiOrder) ToOrder(o *wallet.Order) error {
-	o.ID = a.Id
+	o.Id = a.Id
 	if _, err := o.BaseMint.FromHexString(a.BaseMint); err != nil {
 		return err
 	}
@@ -305,7 +305,7 @@ func (a *ApiWallet) FromWallet(w *wallet.Wallet) (*ApiWallet, error) {
 	a.Orders = make([]ApiOrder, len(w.Orders))
 	for _, order := range w.Orders {
 		var apiOrder ApiOrder
-		if err := apiOrder.FromOrder(&order); err != nil {
+		if _, err := apiOrder.FromOrder(&order); err != nil {
 			return nil, err
 		}
 		a.Orders = append(a.Orders, apiOrder)

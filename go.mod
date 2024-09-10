@@ -7,7 +7,6 @@ require (
 	github.com/ethereum/go-ethereum v1.14.8
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 )
 
 require (
