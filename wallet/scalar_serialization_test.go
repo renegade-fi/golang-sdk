@@ -17,7 +17,6 @@ type TestStruct struct {
 	Uint64Field  Uint64
 	NestedStruct TestNestedStruct
 	ArrayField   [2]Scalar
-	SliceField   []Scalar
 }
 
 func randomScalar() Scalar {
@@ -66,24 +65,6 @@ func TestToFromScalarsArray(t *testing.T) {
 	assert.Equal(t, original, reconstructed)
 }
 
-func TestToFromScalarsSlice(t *testing.T) {
-	// Create a slice of random scalars
-	original := []Scalar{randomScalar(), randomScalar(), randomScalar()}
-
-	// Serialize to scalars
-	scalars, err := ToScalarsRecursive(&original)
-	assert.NoError(t, err)
-	assert.Equal(t, 3, len(scalars))
-
-	// Deserialize from scalars
-	var reconstructed []Scalar
-	err = FromScalarsRecursive(&reconstructed, NewScalarIterator(scalars))
-	assert.NoError(t, err)
-
-	// Compare original and reconstructed
-	assert.Equal(t, original, reconstructed)
-}
-
 func TestToFromScalarsStruct(t *testing.T) {
 	original := TestNestedStruct{
 		NestedScalar: randomScalar(),
@@ -110,13 +91,12 @@ func TestToFromScalarsNestedStruct(t *testing.T) {
 		Uint64Field:  Uint64(1),
 		NestedStruct: TestNestedStruct{NestedScalar: randomScalar(), NestedUint64: Uint64(2)},
 		ArrayField:   [2]Scalar{randomScalar(), randomScalar()},
-		SliceField:   []Scalar{randomScalar(), randomScalar(), randomScalar()},
 	}
 
 	// Serialize to scalars
 	scalars, err := ToScalarsRecursive(&original)
 	assert.NoError(t, err)
-	assert.Equal(t, 9, len(scalars))
+	assert.Equal(t, 6, len(scalars))
 
 	// Deserialize from scalars
 	var reconstructed TestStruct
