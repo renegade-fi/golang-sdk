@@ -20,6 +20,7 @@ func (k *HmacKey) ToHexString() string {
 
 // FromHexString converts a hex string to an HMAC key
 func (k *HmacKey) FromHexString(hexString string) (HmacKey, error) {
+	hexString = preprocessHexString(hexString)
 	bytes, err := hex.DecodeString(hexString)
 	if err != nil {
 		return HmacKey{}, err
@@ -124,6 +125,7 @@ func (pk *PublicSigningKey) ToHexString() string {
 
 // FromHexString converts a hex string to a public key
 func (pk *PublicSigningKey) FromHexString(hexString string) (PublicSigningKey, error) {
+	hexString = preprocessHexString(hexString)
 	bytes, err := hex.DecodeString(hexString)
 	if err != nil {
 		return PublicSigningKey{}, err
@@ -163,6 +165,7 @@ func (pk *PrivateSigningKey) ToHexString() string {
 
 // FromHexString converts a hex string to a private key
 func (pk *PrivateSigningKey) FromHexString(hexString string) (PrivateSigningKey, error) {
+	hexString = preprocessHexString(hexString)
 	bytes, err := hex.DecodeString(hexString)
 	if err != nil {
 		return PrivateSigningKey{}, err
@@ -206,7 +209,7 @@ type FeeEncryptionKey struct {
 
 // ToBytes converts the fee encryption key to a byte slice
 func (pk *FeeEncryptionKey) ToBytes() []byte {
-	xBytes, yBytes := pk.X.Bytes(), pk.Y.Bytes()
+	xBytes, yBytes := pk.X.LittleEndianBytes(), pk.Y.LittleEndianBytes()
 	return append(xBytes[:], yBytes[:]...)
 }
 
@@ -220,8 +223,8 @@ func (pk *FeeEncryptionKey) FromBytes(bytes []byte) error {
 	var yBytes [fr.Bytes]byte
 	copy(xBytes[:], bytes[:fr.Bytes])
 	copy(yBytes[:], bytes[fr.Bytes:])
-	pk.X.FromBytes(xBytes)
-	pk.Y.FromBytes(yBytes)
+	pk.X.FromLittleEndianBytes(xBytes)
+	pk.Y.FromLittleEndianBytes(yBytes)
 	return nil
 }
 
@@ -232,6 +235,7 @@ func (pk *FeeEncryptionKey) ToHexString() string {
 
 // FromHexString converts a hex string to a fee encryption key
 func (pk *FeeEncryptionKey) FromHexString(hexString string) error {
+	hexString = preprocessHexString(hexString)
 	bytes, err := hex.DecodeString(hexString)
 	if err != nil {
 		return err

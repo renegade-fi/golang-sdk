@@ -38,6 +38,20 @@ func TestScalarToBigIntAndBack(t *testing.T) {
 	assert.Equal(t, randomScalar, newScalar, "Scalar -> BigInt -> Scalar conversion failed")
 }
 
+func TestScalarToFromLittleEndianBytes(t *testing.T) {
+	// Generate a random scalar
+	randomScalar, err := RandomScalar()
+	assert.NoError(t, err, "Failed to generate random scalar")
+
+	// Convert to little-endian bytes and back
+	littleEndianBytes := randomScalar.LittleEndianBytes()
+	var newScalar Scalar
+	newScalar.FromLittleEndianBytes(littleEndianBytes)
+
+	// Compare the original and new scalar
+	assert.Equal(t, randomScalar, newScalar, "Scalar -> LittleEndianBytes -> Scalar conversion failed")
+}
+
 func TestNewEmptyWallet(t *testing.T) {
 	// Generate a random private key
 	privateKey, err := ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)

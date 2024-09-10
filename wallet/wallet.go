@@ -22,6 +22,22 @@ const (
 	MaxOrders = 4
 )
 
+// preprocessHexString removes the 0x prefix from a hex string if it exists
+// and pads the string to even length if necessary
+func preprocessHexString(hexString string) string {
+	// Remove 0x prefix if present
+	if len(hexString) >= 2 && hexString[:2] == "0x" {
+		hexString = hexString[2:]
+	}
+
+	// Pad the string to even length if necessary
+	if len(hexString)%2 != 0 {
+		hexString = "0" + hexString
+	}
+
+	return hexString
+}
+
 // Scalar is a scalar field element from the bn254 curve
 type Scalar fr.Element
 
@@ -53,8 +69,9 @@ func (s *Scalar) Uint64() uint64 {
 }
 
 // SetUint64 sets the scalar from a uint64
-func (s *Scalar) SetUint64(val uint64) {
+func (s *Scalar) SetUint64(val uint64) *Scalar {
 	(*fr.Element)(s).SetUint64(val)
+	return s
 }
 
 // Add adds two scalars
@@ -82,19 +99,39 @@ func (s *Scalar) Bytes() [fr.Bytes]byte {
 	return (*fr.Element)(s).Bytes()
 }
 
+// LittleEndianBytes returns the bytes representation of the scalar in little-endian order
+func (s *Scalar) LittleEndianBytes() [fr.Bytes]byte {
+	elt := fr.Element(*s)
+	var res [fr.Bytes]byte
+	fr.LittleEndian.PutElement(&res, elt)
+	return res
+}
+
 // FromBytes sets the scalar from a big-endian byte slice
 func (s *Scalar) FromBytes(bytes [fr.Bytes]byte) {
 	(*fr.Element)(s).SetBytes(bytes[:])
 }
 
+// FromLittleEndianBytes sets the scalar from a little-endian byte slice
+func (s *Scalar) FromLittleEndianBytes(bytes [fr.Bytes]byte) (*Scalar, error) {
+	elt, err := fr.LittleEndian.Element(&bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	*s = Scalar(elt)
+	return s, nil
+}
+
 // HexString returns the hex string representation of the scalar
 func (s *Scalar) ToHexString() string {
-	bytes := s.Bytes()
+	bytes := s.ToBigInt().Bytes()
 	return hex.EncodeToString(bytes[:])
 }
 
 // FromHexString sets the scalar from a hex string
 func (s *Scalar) FromHexString(hexString string) (Scalar, error) {
+	hexString = preprocessHexString(hexString)
 	bytes, err := hex.DecodeString(hexString)
 	if err != nil {
 		return Scalar{}, err
@@ -388,7 +425,7 @@ func (w *Wallet) SignCommitment(commitment Scalar) ([]byte, error) {
 	return sig, nil
 }
 
-// ReblindWallet reblinds the wallet, sampling new secret shares and blinders from the CSPRNGs
+// Reblind reblinds the wallet, sampling new secret shares and blinders from the CSPRNGs
 func (w *Wallet) Reblind() error {
 	privateShares, err := ToScalarsRecursive(&w.PrivateShares)
 	if err != nil {
@@ -397,7 +434,7 @@ func (w *Wallet) Reblind() error {
 
 	// Sample new private shares from the CSPRNG, using the last existing private share as the seed
 	// And sample a new blinder using the old blinder private share as the seed
-	newPrivateShares := walletSharesFromStream(privateShares[len(privateShares)-1])
+	newPrivateShares := walletSharesFromStream(privateShares[len(privateShares)-2])
 	newBlinder, newBlinderPrivateShare := walletBlinderFromSeed(w.PrivateShares.Blinder)
 
 	// Split the new private shares into a private and public share
@@ -406,11 +443,12 @@ func (w *Wallet) Reblind() error {
 		return err
 	}
 
-	publicShare, privateShare, err := existingShare.SplitPublicPrivate(newPrivateShares, newBlinder)
-	privateShare.Blinder = newBlinderPrivateShare
+	privateShare, publicShare, err := existingShare.SplitPublicPrivate(newPrivateShares, newBlinder)
 	if err != nil {
 		return err
 	}
+	privateShare.Blinder = newBlinderPrivateShare
+	publicShare.Blinder = newBlinder.Sub(newBlinderPrivateShare)
 
 	w.PrivateShares = privateShare
 	w.BlindedPublicShares = publicShare

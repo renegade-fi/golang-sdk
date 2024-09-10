@@ -2,6 +2,7 @@ package client
 
 import (
 	"crypto/ecdsa"
+	"encoding/base64"
 
 	"renegade.fi/golang-sdk/client/api_types"
 	"renegade.fi/golang-sdk/wallet"
@@ -85,7 +86,12 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*api_types.ApiWallet, error) {
 		return nil, err
 	}
 
-	return &resp.Wallet, nil
+	// Add the root key to the response, the relayer doesn't have it
+	rootKey := c.walletSecrets.Keychain.PrivateKeys.SkRoot.ToHexString()
+	w := &resp.Wallet
+	w.KeyChain.PrivateKeys.SkRoot = &rootKey
+
+	return w, nil
 }
 
 // LookupWallet looks up a wallet in the relayer from contract state.
@@ -264,7 +270,9 @@ func getWalletUpdateAuth(wallet *wallet.Wallet) (*api_types.WalletUpdateAuthoriz
 		return nil, err
 	}
 
+	// base64 encode the signature without padding
+	signatureStr := base64.RawStdEncoding.EncodeToString(signature)
 	return &api_types.WalletUpdateAuthorization{
-		StatementSig: signature,
+		StatementSig: &signatureStr,
 	}, nil
 }
