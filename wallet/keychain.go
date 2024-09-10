@@ -192,6 +192,11 @@ type Keychain struct {
 	PrivateKeys PrivateKeychain
 }
 
+// SkRoot returns the private root key
+func (k *Keychain) SkRoot() *PrivateSigningKey {
+	return k.PrivateKeys.SkRoot
+}
+
 // FeeEncryptionKey is a public encryption key on the Baby Jubjub curve
 // We represent the key in coordinate form with scalar values
 type FeeEncryptionKey struct {

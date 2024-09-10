@@ -63,6 +63,31 @@ func (c *RenegadeClient) GetWallet() (*api_types.ApiWallet, error) {
 	return &resp.Wallet, nil
 }
 
+// GetBackOfQueueWallet retrieves the wallet at the back of the processing queue from the relayer.
+//
+// This method sends a GET request to fetch the wallet state after all pending tasks
+// in its queue have been processed. It's useful for getting the most up-to-date
+// wallet state when there are known pending operations.
+//
+// Returns:
+//   - *api_types.ApiWallet: The retrieved wallet at the back of the queue, if successful.
+//   - error: An error if the retrieval fails, nil otherwise.
+//
+// The method uses the client's wallet ID to construct the API path and sends
+// an authenticated GET request to the relayer.
+func (c *RenegadeClient) GetBackOfQueueWallet() (*api_types.ApiWallet, error) {
+	walletId := c.walletSecrets.Id
+	path := api_types.BuildBackOfQueueWalletPath(walletId)
+
+	resp := api_types.GetWalletResponse{}
+	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp.Wallet, nil
+}
+
 // LookupWallet looks up a wallet in the relayer from contract state.
 //
 // This method sends a request to the relayer to retrieve wallet information
@@ -165,4 +190,81 @@ func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error)
 	}
 
 	return &resp, nil
+}
+
+// PlaceOrder creates an order on the Renegade API.
+//
+// This method sends a request to the Renegade API to create an order for a specified
+// token pair. It uses the client's wallet ID and the provided token details to construct
+// the request.
+//
+// Returns:
+//   - *api_types.CreateOrderResponse: Contains the order ID and task ID if successful.
+//   - error: An error if the order creation fails, nil otherwise.
+func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*api_types.CreateOrderResponse, error) {
+	// Get the back of the queue wallet
+	apiWallet, err := c.GetBackOfQueueWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API wallet to a wallet
+	backOfQueueWallet, err := apiWallet.ToWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	// Add the order to the wallet and reblind
+	err = backOfQueueWallet.NewOrder(*order)
+	if err != nil {
+		return nil, err
+	}
+	backOfQueueWallet.Reblind()
+
+	// Sign the commitment to the new wallet
+	auth, err := getWalletUpdateAuth(backOfQueueWallet)
+	if err != nil {
+		return nil, err
+	}
+
+	// Post the order to the relayer
+	apiOrder, err := new(api_types.ApiOrder).FromOrder(order)
+	if err != nil {
+		return nil, err
+	}
+
+	req := api_types.CreateOrderRequest{
+		Order:                     *apiOrder,
+		WalletUpdateAuthorization: *auth,
+	}
+
+	walletId := c.walletSecrets.Id
+	path := api_types.BuildCreateOrderPath(walletId)
+	resp := api_types.CreateOrderResponse{}
+
+	err = c.httpClient.PostWithAuth(path, req, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &resp, nil
+}
+
+// getWalletUpdateAuth gets the wallet update authorization for the given wallet
+func getWalletUpdateAuth(wallet *wallet.Wallet) (*api_types.WalletUpdateAuthorization, error) {
+	// Compute the commitment to the new wallet
+	commitment, err := wallet.GetShareCommitment()
+	if err != nil {
+		return nil, err
+	}
+
+	// Sign the commitment with skRoot
+	signature, err := wallet.SignCommitment(commitment)
+	if err != nil {
+		return nil, err
+	}
+
+	return &api_types.WalletUpdateAuthorization{
+		StatementSig: signature,
+	}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 
 	renegade_crypto "renegade.fi/golang-sdk/crypto"
@@ -16,9 +17,9 @@ const (
 	// numScalarsWalletShare is the number of scalars in a wallet share
 	numScalarsWalletShare = 70
 	// maxBalances is the maximum number of balances in a wallet
-	maxBalances = 10
+	MaxBalances = 10
 	// maxOrders is the maximum number of orders in a wallet
-	maxOrders = 4
+	MaxOrders = 4
 )
 
 // Scalar is a scalar field element from the bn254 curve
@@ -159,9 +160,9 @@ func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecre
 // WalletShare represents a secret share of a wallet, containing only the elements of a wallet that are stored on-chain
 type WalletShare struct {
 	// Balances are the balances of the wallet
-	Balances [maxBalances]Balance
+	Balances [MaxBalances]Balance
 	// Orders are the orders of the wallet
-	Orders [maxOrders]Order
+	Orders [MaxOrders]Order
 	// Keys are the public keys of the wallet
 	Keys PublicKeychain
 	// MatchFee is the fee that the wallet pays to the cluster that matches its orders
@@ -229,6 +230,33 @@ func (ws *WalletShare) SplitPublicPrivate(privateShares []Scalar, blinder Scalar
 	}
 
 	return privateShare, publicShare, nil
+}
+
+// CombineShares combines two wallet shares into a single wallet share
+func CombineShares(publicShare WalletShare, privateShare WalletShare, blinder Scalar) (WalletShare, error) {
+	publicScalars, err := ToScalarsRecursive(&publicShare)
+	if err != nil {
+		return WalletShare{}, err
+	}
+
+	privateScalars, err := ToScalarsRecursive(&privateShare)
+	if err != nil {
+		return WalletShare{}, err
+	}
+
+	combinedScalars := make([]Scalar, len(publicScalars))
+	for i := range publicScalars {
+		tmp := publicScalars[i].Add(privateScalars[i])
+		combinedScalars[i] = tmp.Sub(blinder)
+	}
+
+	combined := WalletShare{}
+	err = FromScalarsRecursive(&combined, NewScalarIterator(combinedScalars))
+	if err != nil {
+		return WalletShare{}, err
+	}
+
+	return combined, nil
 }
 
 // Wallet is a wallet in the Renegade system
@@ -315,4 +343,174 @@ func walletBlinderFromSeed(seed Scalar) (Scalar, Scalar) {
 	blinderPrivateShare := Scalar(csprng.Next())
 
 	return blinder, blinderPrivateShare
+}
+
+// GetShareCommitment returns a Poseidon hash commitment of the wallet's shares
+func (w *Wallet) GetShareCommitment() (Scalar, error) {
+	privateCommitment, err := w.GetPrivateShareCommitment()
+	if err != nil {
+		return Scalar{}, err
+	}
+
+	// Hash in the public shares
+	publicShares, err := ToScalarsRecursive(&w.BlindedPublicShares)
+	if err != nil {
+		return Scalar{}, err
+	}
+
+	// Create a hash input that is the privateCommitment concatenated with the publicShares
+	hashInput := append([]Scalar{privateCommitment}, publicShares...)
+	return HashScalars(hashInput), nil
+}
+
+// GetPrivateShareCommitment returns a Poseidon hash commitment of the wallet's private share
+func (w *Wallet) GetPrivateShareCommitment() (Scalar, error) {
+	privateShares, err := ToScalarsRecursive(&w.PrivateShares)
+	if err != nil {
+		return Scalar{}, err
+	}
+
+	return HashScalars(privateShares), nil
+}
+
+// SignCommitment signs the given commitment using the private root key
+func (w *Wallet) SignCommitment(commitment Scalar) ([]byte, error) {
+	privateRootKey := w.Keychain.SkRoot()
+	signKey := ecdsa.PrivateKey(*privateRootKey)
+
+	commBytes := commitment.ToBigInt().Bytes()
+	digest := crypto.Keccak256(commBytes)
+	sig, err := crypto.Sign(digest, &signKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return sig, nil
+}
+
+// ReblindWallet reblinds the wallet, sampling new secret shares and blinders from the CSPRNGs
+func (w *Wallet) Reblind() error {
+	privateShares, err := ToScalarsRecursive(&w.PrivateShares)
+	if err != nil {
+		return err
+	}
+
+	// Sample new private shares from the CSPRNG, using the last existing private share as the seed
+	// And sample a new blinder using the old blinder private share as the seed
+	newPrivateShares := walletSharesFromStream(privateShares[len(privateShares)-1])
+	newBlinder, newBlinderPrivateShare := walletBlinderFromSeed(w.PrivateShares.Blinder)
+
+	// Split the new private shares into a private and public share
+	existingShare, err := w.getExistingWalletShare()
+	if err != nil {
+		return err
+	}
+
+	publicShare, privateShare, err := existingShare.SplitPublicPrivate(newPrivateShares, newBlinder)
+	privateShare.Blinder = newBlinderPrivateShare
+	if err != nil {
+		return err
+	}
+
+	w.PrivateShares = privateShare
+	w.BlindedPublicShares = publicShare
+	w.Blinder = newBlinder
+	return nil
+}
+
+// getExistingWalletShare combines the existing public and private shares into a single wallet share
+func (w *Wallet) getExistingWalletShare() (WalletShare, error) {
+	ws := new(WalletShare)
+
+	// Deep copy Balances
+	for i, balance := range w.Balances {
+		if i >= MaxBalances {
+			break
+		}
+		ws.Balances[i] = balance
+	}
+
+	// Deep copy Orders
+	for i, order := range w.Orders {
+		if i >= MaxOrders {
+			break
+		}
+		ws.Orders[i] = order
+	}
+
+	// These are likely value types, so simple assignment should be fine
+	ws.Keys = w.Keychain.PublicKeys
+	ws.MatchFee = w.MatchFee
+	ws.ManagingCluster = w.ManagingCluster
+	ws.Blinder = w.Blinder
+
+	return *ws, nil
+}
+
+// NewOrder appends an order to the wallet
+func (w *Wallet) NewOrder(order Order) error {
+	// Find the first order that may be replaced
+	if idx := w.findReplaceableOrder(); idx != -1 {
+		w.Orders[idx] = order
+	} else if len(w.Orders) < MaxOrders {
+		w.Orders = append(w.Orders, order)
+	} else {
+		return fmt.Errorf("wallet already has the maximum number of orders")
+	}
+
+	return nil
+}
+
+// findReplaceableOrder finds the first order that may be replaced by the new order
+// Returns the index of the order to replace, or -1 if no order may be replaced
+func (w *Wallet) findReplaceableOrder() int {
+	for i, existingOrder := range w.Orders {
+		if existingOrder.IsZero() {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// AddBalance appends a balance to the wallet
+func (w *Wallet) AddBalance(balance Balance) error {
+	// Find an existing balance for the mint if one exists
+	if idx := w.findMatchingBalance(balance.Mint); idx != -1 {
+		w.Balances[idx].Amount = w.Balances[idx].Amount.Add(balance.Amount)
+		return nil
+	}
+
+	// If the balance is not found, try to append one
+	if idx := w.findReplaceableBalance(); idx != -1 {
+		w.Balances[idx] = balance
+	} else if len(w.Balances) < MaxBalances {
+		w.Balances = append(w.Balances, balance)
+	} else {
+		return fmt.Errorf("wallet already has the maximum number of balances")
+	}
+
+	return nil
+}
+
+// findMatchingBalance finds the index of a balance with the given mint, or -1 if no balance has the given mint
+func (w *Wallet) findMatchingBalance(mint Scalar) int {
+	for i, balance := range w.Balances {
+		if balance.Mint == mint {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// findReplaceableBalance finds the first balance that may be replaced, returning the index of the balance, or -1 if no balance may be replaced
+func (w *Wallet) findReplaceableBalance() int {
+	for i, balance := range w.Balances {
+		if balance.IsZero() {
+			return i
+		}
+	}
+
+	return -1
 }

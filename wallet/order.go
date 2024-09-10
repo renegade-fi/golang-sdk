@@ -42,7 +42,7 @@ func (s *OrderSide) NumScalars() int {
 // Order is an order in the Renegade system
 type Order struct {
 	// ID is the id of the order
-	ID uuid.UUID `scalar_serialize:"skip"`
+	Id uuid.UUID `scalar_serialize:"skip"`
 	// BaseMint is the erc20 address of the base asset
 	BaseMint Scalar
 	// QuoteMint is the erc20 address of the quote asset
@@ -65,4 +65,9 @@ func NewEmptyOrder() Order {
 		Side:           Scalar{},
 		WorstCasePrice: FixedPoint{},
 	}
+}
+
+// IsZero returns whether the volume of the order is zero
+func (o *Order) IsZero() bool {
+	return o.Amount.IsZero()
 }

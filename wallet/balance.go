@@ -21,3 +21,8 @@ func NewEmptyBalance() Balance {
 		ProtocolFeeBalance: Scalar{},
 	}
 }
+
+// IsZero returns true if the balance amount and fees are zero
+func (b *Balance) IsZero() bool {
+	return b.Amount.IsZero() && b.RelayerFeeBalance.IsZero() && b.ProtocolFeeBalance.IsZero()
+}
