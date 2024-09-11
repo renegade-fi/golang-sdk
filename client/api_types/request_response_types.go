@@ -21,6 +21,8 @@ const (
 	CreateOrderPath = "/v0/wallet/%s/orders"
 	// CancelOrderPath is the path for the CancelOrder action
 	CancelOrderPath = "/v0/wallet/%s/orders/%s/cancel"
+	// DepositPath is the path for the Deposit action
+	DepositPath = "/v0/wallet/%s/balances/deposit"
 )
 
 type ScalarLimbs [secretShareLimbCount]uint32
@@ -33,29 +35,34 @@ type WalletUpdateAuthorization struct {
 	NewRootKey *string `json:"new_root_key"`
 }
 
-// buildGetWalletPath builds the path for the GetWallet action
+// BuildGetWalletPath builds the path for the GetWallet action
 func BuildGetWalletPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(GetWalletPath, walletId)
 }
 
-// buildBackOfQueueWalletPath builds the path for the BackOfQueueWallet action
+// BuildBackOfQueueWalletPath builds the path for the BackOfQueueWallet action
 func BuildBackOfQueueWalletPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(BackOfQueueWalletPath, walletId)
 }
 
-// buildRefreshWalletPath builds the path for the RefreshWallet action
+// BuildRefreshWalletPath builds the path for the RefreshWallet action
 func BuildRefreshWalletPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(RefreshWalletPath, walletId)
 }
 
-// buildCreateOrderPath builds the path for the CreateOrder action
+// BuildCreateOrderPath builds the path for the CreateOrder action
 func BuildCreateOrderPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(CreateOrderPath, walletId)
 }
 
-// buildCancelOrderPath builds the path for the CancelOrder action
+// BuildCancelOrderPath builds the path for the CancelOrder action
 func BuildCancelOrderPath(walletId uuid.UUID, orderId uuid.UUID) string {
 	return fmt.Sprintf(CancelOrderPath, walletId, orderId)
+}
+
+// BuildDepositPath builds the path for the Deposit action
+func BuildDepositPath(walletId uuid.UUID) string {
+	return fmt.Sprintf(DepositPath, walletId)
 }
 
 // GetWalletResponse is the response body for a GetWallet request
@@ -118,4 +125,30 @@ type CancelOrderResponse struct {
 	TaskId uuid.UUID `json:"task_id"`
 	// Order is the order that was canceled
 	Order ApiOrder `json:"order"`
+}
+
+// DepositRequest is the request body for the Deposit action
+type DepositRequest struct {
+	// FromAddr is the address to deposit from
+	FromAddr string `json:"from_addr"`
+	// Mint is the mint of the token to deposit
+	Mint string `json:"mint"`
+	// Amount is the amount of the token to deposit
+	Amount string `json:"amount"`
+	// WalletUpdateAuthorization is the authorization for the wallet update
+	WalletUpdateAuthorization
+	// PermitNonce is the nonce used in the associated Permit2 permit
+	PermitNonce string `json:"permit_nonce"`
+	// PermitDeadline is the deadline used in the associated Permit2 permit
+	PermitDeadline string `json:"permit_deadline"`
+	// PermitSignature is the signature over the associated Permit2 permit,
+	// allowing the contract to guarantee that the deposit is sourced from
+	// the correct account
+	PermitSignature string `json:"permit_signature"`
+}
+
+// DepositResponse is the response body for the Deposit action
+type DepositResponse struct {
+	// TaskId is the ID of the task that was created to update the wallet
+	TaskId uuid.UUID `json:"task_id"`
 }

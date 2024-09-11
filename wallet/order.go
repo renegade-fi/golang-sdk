@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/google/uuid"
@@ -56,15 +57,107 @@ type Order struct {
 	WorstCasePrice FixedPoint
 }
 
-// NewEmptyOrder creates a new order with all zero values
+// OrderBuilder is a builder for Order
+type OrderBuilder struct {
+	order Order
+}
+
+// NewOrderBuilder creates a new OrderBuilder
+func NewOrderBuilder() *OrderBuilder {
+	return &OrderBuilder{order: NewEmptyOrder()}
+}
+
+// WithId sets the Id
+func (ob *OrderBuilder) WithId(id uuid.UUID) *OrderBuilder {
+	ob.order.Id = id
+	return ob
+}
+
+// WithQuoteMint sets the QuoteMint
+func (ob *OrderBuilder) WithQuoteMint(quoteMint Scalar) *OrderBuilder {
+	ob.order.QuoteMint = quoteMint
+	return ob
+}
+
+// WithQuoteMintHex sets the QuoteMint from a hex string
+func (ob *OrderBuilder) WithQuoteMintHex(hexQuoteMint string) *OrderBuilder {
+	quoteMint, err := new(Scalar).FromHexString(hexQuoteMint)
+	if err != nil {
+		panic(err)
+	}
+	ob.order.QuoteMint = quoteMint
+	return ob
+}
+
+// WithBaseMint sets the BaseMint
+func (ob *OrderBuilder) WithBaseMint(baseMint Scalar) *OrderBuilder {
+	ob.order.BaseMint = baseMint
+	return ob
+}
+
+// WithBaseMintHex sets the BaseMint from a hex string
+func (ob *OrderBuilder) WithBaseMintHex(hexBaseMint string) *OrderBuilder {
+	baseMint, err := new(Scalar).FromHexString(hexBaseMint)
+	if err != nil {
+		panic(err)
+	}
+	ob.order.BaseMint = baseMint
+	return ob
+}
+
+// WithSide sets the Side
+func (ob *OrderBuilder) WithSide(side OrderSide) *OrderBuilder {
+	sideScalar, _ := side.ToScalars()
+	ob.order.Side = sideScalar[0]
+	return ob
+}
+
+// WithAmount sets the Amount
+func (ob *OrderBuilder) WithAmount(amount Scalar) *OrderBuilder {
+	ob.order.Amount = amount
+	return ob
+}
+
+// WithAmountBigInt sets the Amount from a big.Int
+func (ob *OrderBuilder) WithAmountBigInt(amount *big.Int) *OrderBuilder {
+	ob.order.Amount = new(Scalar).FromBigInt(amount)
+	return ob
+}
+
+// WithWorstCasePrice sets the WorstCasePrice
+func (ob *OrderBuilder) WithWorstCasePrice(price FixedPoint) *OrderBuilder {
+	ob.order.WorstCasePrice = price
+	return ob
+}
+
+// Build returns the constructed Order
+func (ob *OrderBuilder) Build() Order {
+	return ob.order
+}
+
+// Update NewEmptyOrder to use the builder
 func NewEmptyOrder() Order {
+	id := uuid.New()
 	return Order{
-		BaseMint:       Scalar{},
+		Id:             id,
 		QuoteMint:      Scalar{},
-		Amount:         Scalar{},
+		BaseMint:       Scalar{},
 		Side:           Scalar{},
+		Amount:         Scalar{},
 		WorstCasePrice: FixedPoint{},
 	}
+}
+
+// Add a new function to create an order with some default values
+func NewOrder(quoteMint, baseMint Scalar, side OrderSide, amount Scalar, worstCasePrice FixedPoint) Order {
+	return NewOrderBuilder().
+		WithId(uuid.New()).
+		WithQuoteMint(quoteMint).
+		WithBaseMint(baseMint).
+		WithSide(side).
+		WithAmount(amount).
+		WithWorstCasePrice(worstCasePrice).
+		Build()
 }
 
 // IsZero returns whether the volume of the order is zero
