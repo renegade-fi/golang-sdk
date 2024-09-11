@@ -71,3 +71,53 @@ func NewEmptyOrder() Order {
 func (o *Order) IsZero() bool {
 	return o.Amount.IsZero()
 }
+
+// NewOrder appends an order to the wallet
+func (w *Wallet) NewOrder(order Order) error {
+	// Find the first order that may be replaced
+	if idx := w.findReplaceableOrder(); idx != -1 {
+		w.Orders[idx] = order
+	} else if len(w.Orders) < MaxOrders {
+		w.Orders = append(w.Orders, order)
+	} else {
+		return fmt.Errorf("wallet already has the maximum number of orders")
+	}
+
+	return nil
+}
+
+// findReplaceableOrder finds the first order that may be replaced by the new order
+// Returns the index of the order to replace, or -1 if no order may be replaced
+func (w *Wallet) findReplaceableOrder() int {
+	for i, existingOrder := range w.Orders {
+		if existingOrder.IsZero() {
+			return i
+		}
+	}
+
+	return -1
+}
+
+// CancelOrder cancels an order by ID
+func (w *Wallet) CancelOrder(orderId uuid.UUID) error {
+	// Find the order to cancel
+	idx := w.findOrder(orderId)
+	if idx == -1 {
+		return fmt.Errorf("order not found")
+	}
+
+	// Remove the order and append an empty order to the end
+	w.Orders = append(w.Orders[:idx], append(w.Orders[idx+1:], NewEmptyOrder())...)
+	return nil
+}
+
+// findOrder finds the index of an order with the given ID, or -1 if no order has the given ID
+func (w *Wallet) findOrder(orderId uuid.UUID) int {
+	for i, order := range w.Orders {
+		if order.Id == orderId {
+			return i
+		}
+	}
+
+	return -1
+}
