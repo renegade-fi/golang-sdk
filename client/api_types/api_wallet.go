@@ -3,6 +3,7 @@ package api_types
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"math/big"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/google/uuid"
@@ -13,28 +14,30 @@ import (
 // The number of u32 limbs in the serialized form of a secret share
 const secretShareLimbCount = 8 // 256 bits
 
-type Amount uint64
+type Amount big.Int
 
-// func (a *Amount) String() string {
-// 	return (*big.Int)(a).String()
-// }
+func (a *Amount) String() string {
+	return (*big.Int)(a).String()
+}
 
-// func (a *Amount) MarshalJSON() ([]byte, error) {
-// 	return []byte(a.String()), nil
-// }
+func (a Amount) MarshalJSON() ([]byte, error) {
+	s := a.String()
+	return []byte(s), nil
+}
 
-// func (a *Amount) SetString(s string, base int) error {
-// 	i, ok := new(big.Int).SetString(s, base)
-// 	if !ok {
-// 		return fmt.Errorf("invalid number: %s", s)
-// 	}
-// 	*a = Amount(*i)
-// 	return nil
-// }
+func (a *Amount) SetString(s string, base int) error {
+	i, ok := new(big.Int).SetString(s, base)
+	if !ok {
+		return fmt.Errorf("invalid number: %s", s)
+	}
+	*a = Amount(*i)
+	return nil
+}
 
-// func (a *Amount) UnmarshalJSON(b []byte) error {
-// 	return a.SetString(string(b), 10)
-// }
+func (a *Amount) UnmarshalJSON(b []byte) error {
+	s := string(b)
+	return a.SetString(s, 10)
+}
 
 // orderSideFromScalar converts a wallet.Scalar to an order side
 func orderSideFromScalar(s wallet.Scalar) (string, error) {
@@ -85,7 +88,7 @@ func (a *ApiOrder) FromOrder(o *wallet.Order) (*ApiOrder, error) {
 	a.Id = o.Id
 	a.BaseMint = o.BaseMint.ToHexString()
 	a.QuoteMint = o.QuoteMint.ToHexString()
-	a.Amount = Amount(o.Amount.Uint64())
+	a.Amount = Amount(*o.Amount.ToBigInt())
 	a.Type = "Midpoint" // Renegade only supports midpoint orders for now
 	side, err := orderSideFromScalar(o.Side)
 	if err != nil {
@@ -108,7 +111,8 @@ func (a *ApiOrder) ToOrder(o *wallet.Order) error {
 		return err
 	}
 
-	o.Amount = *new(wallet.Scalar).SetUint64(uint64(a.Amount))
+	amtBigint := big.Int(a.Amount)
+	o.Amount = new(wallet.Scalar).FromBigInt(&amtBigint)
 	side, err := orderSideToScalar(a.Side)
 	if err != nil {
 		return err
@@ -133,9 +137,9 @@ type ApiBalance struct {
 // FromBalance converts a wallet.Balance to an ApiBalance
 func (a *ApiBalance) FromBalance(b *wallet.Balance) error {
 	a.Mint = b.Mint.ToHexString()
-	a.Amount = Amount(b.Amount.Uint64())
-	a.RelayerFeeBalance = Amount(b.RelayerFeeBalance.Uint64())
-	a.ProtocolFeeBalance = Amount(b.ProtocolFeeBalance.Uint64())
+	a.Amount = Amount(*b.Amount.ToBigInt())
+	a.RelayerFeeBalance = Amount(*b.RelayerFeeBalance.ToBigInt())
+	a.ProtocolFeeBalance = Amount(*b.ProtocolFeeBalance.ToBigInt())
 
 	return nil
 }
@@ -145,9 +149,13 @@ func (a *ApiBalance) ToBalance(b *wallet.Balance) error {
 	if _, err := b.Mint.FromHexString(a.Mint); err != nil {
 		return err
 	}
-	b.Amount = *new(wallet.Scalar).SetUint64(uint64(a.Amount))
-	b.RelayerFeeBalance = *new(wallet.Scalar).SetUint64(uint64(a.RelayerFeeBalance))
-	b.ProtocolFeeBalance = *new(wallet.Scalar).SetUint64(uint64(a.ProtocolFeeBalance))
+
+	amtBigint := big.Int(a.Amount)
+	b.Amount = new(wallet.Scalar).FromBigInt(&amtBigint)
+	relayerFeeBigint := big.Int(a.RelayerFeeBalance)
+	b.RelayerFeeBalance = new(wallet.Scalar).FromBigInt(&relayerFeeBigint)
+	protocolFeeBigint := big.Int(a.ProtocolFeeBalance)
+	b.ProtocolFeeBalance = new(wallet.Scalar).FromBigInt(&protocolFeeBigint)
 
 	return nil
 }
