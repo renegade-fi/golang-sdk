@@ -10,7 +10,7 @@ const (
 	// GetWalletPath is the path for the GetWallet action
 	GetWalletPath = "/v0/wallet/%s"
 	// BackOfQueueWalletPath is the path to fetch the wallet after all tasks in its queue have been processed
-	BackOfQueueWalletPath = "/v0/wallet/%s/back_of_queue"
+	BackOfQueueWalletPath = "/v0/wallet/%s/back-of-queue"
 	// LookupWalletPath is the path for the LookupWallet action
 	LookupWalletPath = "/v0/wallet/lookup"
 	// RefreshWalletPath is the path for the RefreshWallet action
@@ -26,7 +26,7 @@ type ScalarLimbs [secretShareLimbCount]uint32
 // WalletUpdateAuthorization encapsulates the client generated authorization for wallet updates
 type WalletUpdateAuthorization struct {
 	// StatementSig is the signature of the commitment to the new wallet under the client's current root key
-	StatementSig []byte `json:"statement_sig"`
+	StatementSig *string `json:"statement_sig"`
 	// NewRootKey is the root key for the new wallet, if the client prefers to rotate the root key
 	NewRootKey *string `json:"new_root_key"`
 }

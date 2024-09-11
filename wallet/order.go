@@ -43,15 +43,15 @@ func (s *OrderSide) NumScalars() int {
 type Order struct {
 	// ID is the id of the order
 	Id uuid.UUID `scalar_serialize:"skip"`
-	// BaseMint is the erc20 address of the base asset
-	BaseMint Scalar
 	// QuoteMint is the erc20 address of the quote asset
 	QuoteMint Scalar
-	// Amount is the amount of the order
-	Amount Scalar
+	// BaseMint is the erc20 address of the base asset
+	BaseMint Scalar
 	// Side is the side of the order
 	// 0 for buy, 1 for sell
 	Side Scalar
+	// Amount is the amount of the order
+	Amount Scalar
 	// WorstCasePrice is the worst case price of the order
 	WorstCasePrice FixedPoint
 }
