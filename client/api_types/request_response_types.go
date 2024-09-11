@@ -19,6 +19,8 @@ const (
 	CreateWalletPath = "/v0/wallet"
 	// CreateOrderPath is the path for the CreateOrder action
 	CreateOrderPath = "/v0/wallet/%s/orders"
+	// CancelOrderPath is the path for the CancelOrder action
+	CancelOrderPath = "/v0/wallet/%s/orders/%s/cancel"
 )
 
 type ScalarLimbs [secretShareLimbCount]uint32
@@ -49,6 +51,11 @@ func BuildRefreshWalletPath(walletId uuid.UUID) string {
 // buildCreateOrderPath builds the path for the CreateOrder action
 func BuildCreateOrderPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(CreateOrderPath, walletId)
+}
+
+// buildCancelOrderPath builds the path for the CancelOrder action
+func BuildCancelOrderPath(walletId uuid.UUID, orderId uuid.UUID) string {
+	return fmt.Sprintf(CancelOrderPath, walletId, orderId)
 }
 
 // GetWalletResponse is the response body for a GetWallet request
@@ -98,4 +105,17 @@ type CreateOrderResponse struct {
 	Id uuid.UUID `json:"id"`
 	// TaskId is the ID of the task that was created to update the wallet
 	TaskId uuid.UUID `json:"task_id"`
+}
+
+// CancelOrderRequest is the request body for the CancelOrder action
+type CancelOrderRequest struct {
+	WalletUpdateAuthorization
+}
+
+// CancelOrderResponse is the response body for the CancelOrder action
+type CancelOrderResponse struct {
+	// TaskId is the ID of the task that was created to update the wallet
+	TaskId uuid.UUID `json:"task_id"`
+	// Order is the order that was canceled
+	Order ApiOrder `json:"order"`
 }
