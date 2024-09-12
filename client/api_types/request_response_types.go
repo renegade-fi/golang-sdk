@@ -23,6 +23,8 @@ const (
 	CancelOrderPath = "/v0/wallet/%s/orders/%s/cancel"
 	// DepositPath is the path for the Deposit action
 	DepositPath = "/v0/wallet/%s/balances/deposit"
+	// WithdrawPath is the path for the Withdraw action
+	WithdrawPath = "/v0/wallet/%s/balances/%s/withdraw"
 )
 
 type ScalarLimbs [secretShareLimbCount]uint32
@@ -63,6 +65,11 @@ func BuildCancelOrderPath(walletId uuid.UUID, orderId uuid.UUID) string {
 // BuildDepositPath builds the path for the Deposit action
 func BuildDepositPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(DepositPath, walletId)
+}
+
+// BuildWithdrawPath builds the path for the Withdraw action
+func BuildWithdrawPath(walletId uuid.UUID, mint string) string {
+	return fmt.Sprintf(WithdrawPath, walletId, mint)
 }
 
 // GetWalletResponse is the response body for a GetWallet request
@@ -149,6 +156,24 @@ type DepositRequest struct {
 
 // DepositResponse is the response body for the Deposit action
 type DepositResponse struct {
+	// TaskId is the ID of the task that was created to update the wallet
+	TaskId uuid.UUID `json:"task_id"`
+}
+
+// WithdrawRequest is the request body for the Withdraw action
+type WithdrawRequest struct {
+	// DestinationAddr is the address to withdraw to
+	DestinationAddr string `json:"destination_addr"`
+	// Amount is the amount of the token to withdraw
+	Amount string `json:"amount"`
+	// ExternalTransferSig is a signature of the external transfer to authorize the withdrawal and location
+	ExternalTransferSig *string `json:"external_transfer_sig"`
+	// WalletUpdateAuthorization is the authorization for the wallet update
+	WalletUpdateAuthorization
+}
+
+// WithdrawResponse is the response body for the Withdraw action
+type WithdrawResponse struct {
 	// TaskId is the ID of the task that was created to update the wallet
 	TaskId uuid.UUID `json:"task_id"`
 }

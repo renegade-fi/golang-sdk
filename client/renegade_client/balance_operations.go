@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
@@ -93,6 +94,69 @@ func (c *RenegadeClient) setupDeposit(mint string, amount *big.Int, ethPrivateKe
 		PermitSignature: sig,
 	}, nil
 }
+
+// Withdraw withdraws funds from the wallet to the address for the given private key
+func (c *RenegadeClient) Withdraw(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.WithdrawResponse, error) {
+	addr := hex.EncodeToString(crypto.PubkeyToAddress(ethPrivateKey.PublicKey).Bytes())
+	return c.WithdrawToAddress(mint, amount, &addr)
+}
+
+// WithdrawToAddress withdraws funds from the wallet to the given address
+func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destination *string) (*api_types.WithdrawResponse, error) {
+	// Get the back of the queue wallet
+	apiWallet, err := c.GetBackOfQueueWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert the API wallet to a wallet
+	backOfQueueWallet, err := apiWallet.ToWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove the balance from the wallet
+	bal := wallet.NewBalanceBuilder().WithMintHex(mint).WithAmountBigInt(amount).Build()
+	err = backOfQueueWallet.RemoveBalance(bal)
+	if err != nil {
+		return nil, err
+	}
+	backOfQueueWallet.Reblind()
+
+	// Get the wallet update auth
+	auth, err := getWalletUpdateAuth(backOfQueueWallet)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the external transfer signature
+	// Construct the external transfer signature
+
+	externalTransferSig, err := c.generateWithdrawalSignature(mint, amount, destination)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate external transfer signature: %w", err)
+	}
+
+	// Create the withdraw request
+	req := &api_types.WithdrawRequest{
+		DestinationAddr:           *destination,
+		Amount:                    amount.String(),
+		ExternalTransferSig:       externalTransferSig,
+		WalletUpdateAuthorization: *auth,
+	}
+
+	// Post the request to the relayer
+	path := api_types.BuildWithdrawPath(c.walletSecrets.Id, mint)
+	var resp api_types.WithdrawResponse
+	err = c.httpClient.PostWithAuth(path, req, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to post withdraw request: %w", err)
+	}
+
+	return &resp, nil
+}
+
+// --- Helpers --- //
 
 // approvePermit2Deposit approves the Permit2 contract to spend the deposited amount
 func (c *RenegadeClient) approvePermit2Deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) error {
@@ -203,6 +267,25 @@ func (c *RenegadeClient) generatePermit2Signature(mint string, amount *big.Int, 
 	// Add 27 to the last byte of the signature, we expect the bitcoin style replay protection
 	signature[len(signature)-1] += 27
 	return &permitWitnessTransferFrom, signature, nil
+}
+
+// generateWithdrawalSignature generates a signature for the withdrawal
+func (c *RenegadeClient) generateWithdrawalSignature(mint string, amount *big.Int, destination *string) (*string, error) {
+	rootKey := ecdsa.PrivateKey(*c.walletSecrets.Keychain.SkRoot())
+	sigBytes, err := postcardSerializeTransfer(mint, amount, destination)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize transfer: %w", err)
+	}
+
+	// Hash and sign
+	digest := crypto.Keccak256(sigBytes)
+	signature, err := crypto.Sign(digest, &rootKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign withdrawal: %w", err)
+	}
+
+	sig := base64.RawStdEncoding.EncodeToString(signature)
+	return &sig, nil
 }
 
 // randomU256 generates a random 256-bit unsigned integer
