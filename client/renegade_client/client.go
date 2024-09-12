@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/google/uuid"
 	"renegade.fi/golang-sdk/client"
 	"renegade.fi/golang-sdk/client/api_types"
 	"renegade.fi/golang-sdk/wallet"
@@ -41,7 +42,7 @@ var (
 	}
 )
 
-// Client represents a client for the renegade API
+// RenegadeClient represents a client for the renegade API
 type RenegadeClient struct {
 	chainConfig   ChainConfig
 	walletSecrets *wallet.WalletSecrets
@@ -71,6 +72,159 @@ func NewRenegadeClientWithConfig(baseURL string, ethKey *ecdsa.PrivateKey, confi
 		walletSecrets: walletInfo,
 		httpClient:    client.NewHttpClient(baseURL, &authKey),
 	}, nil
+}
+
+// GetWallet retrieves the current wallet state from the relayer.
+//
+// Returns:
+//   - *wallet.Wallet: The retrieved wallet, if successful.
+//   - error: An error if the retrieval fails, nil otherwise.
+//
+// This method sends a GET request to the relayer to fetch the current
+// wallet state. It uses the client's wallet ID to construct the API path.
+// The retrieved wallet data is converted from the API format to the internal
+// wallet.Wallet type before being returned.
+func (c *RenegadeClient) GetWallet() (*wallet.Wallet, error) {
+	return c.getWallet()
+}
+
+// GetBackOfQueueWallet retrieves the wallet at the back of the processing queue from the relayer.
+//
+// This method sends a GET request to fetch the wallet state after all pending tasks
+// in its queue have been processed. It's useful for getting the most up-to-date
+// wallet state when there are known pending operations.
+//
+// Returns:
+//   - *wallet.Wallet: The retrieved wallet at the back of the queue, if successful.
+//   - error: An error if the retrieval fails, nil otherwise.
+//
+// The method uses the client's wallet ID to construct the API path and sends
+// an authenticated GET request to the relayer.
+func (c *RenegadeClient) GetBackOfQueueWallet() (*wallet.Wallet, error) {
+	return c.getBackOfQueueWallet()
+}
+
+// LookupWallet looks up a wallet in the relayer from contract state.
+//
+// This method sends a request to the relayer to retrieve wallet information
+// from the blockchain. It uses the client's wallet secrets to construct the request.
+//
+// Returns:
+//   - *api_types.LookupWalletResponse: Contains the wallet ID and task ID if successful.
+//   - error: An error if the lookup fails, nil otherwise.
+//
+// The method constructs a LookupWalletRequest with the wallet ID, blinder seed,
+// share seed, and private keychain (excluding the root key). It then sends a POST
+// request to the relayer and returns the response.
+func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error) {
+	return c.lookupWallet()
+}
+
+// RefreshWallet refreshes the relayer's view of the wallet's state by looking up the wallet on-chain.
+//
+// This method sends a request to the relayer to update its local state with the latest on-chain
+// information for the wallet associated with the client. It's useful for synchronizing the
+// relayer's view with the current blockchain state, especially after on-chain transactions.
+//
+// Returns:
+//   - *api_types.RefreshWalletResponse: Contains the task ID for the refresh operation.
+//   - error: An error if the refresh operation fails, nil otherwise.
+//
+// The method uses the client's wallet ID to construct the API path and sends a POST request
+// to the relayer. If successful, it returns the response containing the task ID for tracking
+// the refresh operation.
+func (c *RenegadeClient) RefreshWallet() (*api_types.RefreshWalletResponse, error) {
+	return c.refreshWallet()
+}
+
+// CreateWallet creates a new wallet derived from the client's wallet secrets.
+//
+// Returns:
+//   - *api_types.CreateWalletResponse: Contains the task ID and wallet ID of the created wallet
+//   - error: An error if the wallet creation fails, nil otherwise
+//
+// The method generates a new Renegade wallet using the client's wallet secrets,
+// submits a creation request to the Renegade API, and returns the response.
+// This wallet can be used for private transactions within the Renegade network.
+func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error) {
+	return c.createWallet()
+}
+
+// Deposit deposits funds into the wallet associated with the client.
+//
+// This method initiates a deposit transaction, adding the specified amount of
+// a given token (identified by its mint address) to the client's wallet. It
+// interacts with the Ethereum blockchain and the Renegade protocol to process
+// the deposit.
+//
+// Parameters:
+//   - mint: A pointer to a string representing the token's mint address.
+//   - amount: A pointer to a big.Int representing the amount to deposit.
+//   - ethPrivateKey: The Ethereum private key used to sign the transaction.
+//
+// Returns:
+//   - *api_types.DepositResponse: Contains information about the deposit transaction,
+//     including the task ID and any relevant details from the Renegade protocol.
+//   - error: An error if the deposit process fails, nil otherwise.
+//
+// The method handles the entire deposit flow, including updating the local wallet
+// state, approving the Permit2 contract for spending, and submitting the deposit
+// request to the Renegade relayer.
+func (c *RenegadeClient) Deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.DepositResponse, error) {
+	return c.deposit(mint, amount, ethPrivateKey)
+}
+
+// Withdraw initiates a withdrawal transaction, removing the specified amount
+// of a given token (identified by its mint address) from the client's wallet. It
+// interacts with the Ethereum blockchain and the Renegade protocol to process
+// the withdrawal.
+//
+// Parameters:
+//   - mint: A pointer to a string representing the token's mint address.
+//   - amount: A pointer to a big.Int representing the amount to withdraw.
+//   - ethPrivateKey: The Ethereum private key used to sign the transaction.
+//
+// Returns:
+//   - *api_types.WithdrawResponse: Contains information about the withdrawal transaction,
+//     including the task ID and any relevant details from the Renegade protocol.
+//   - error: An error if the withdrawal process fails, nil otherwise.
+func (c *RenegadeClient) Withdraw(mint string, amount *big.Int) (*api_types.WithdrawResponse, error) {
+	return c.withdraw(mint, amount)
+}
+
+// WithdrawToAddress withdraws funds from the wallet to the given address
+func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destination string) (*api_types.WithdrawResponse, error) {
+	return c.withdrawToAddress(mint, amount, destination)
+}
+
+// PlaceOrder creates an order on the Renegade API.
+//
+// This method sends a request to the Renegade API to create an order for a specified
+// token pair. It uses the client's wallet ID and the provided token details to construct
+// the request.
+//
+// Returns:
+//   - *api_types.CreateOrderResponse: Contains the order ID and task ID if successful.
+//   - error: An error if the order creation fails, nil otherwise.
+func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*api_types.CreateOrderResponse, error) {
+	return c.placeOrder(order)
+}
+
+// CancelOrder cancels an order via the Renegade API.
+//
+// This method sends a request to the Renegade API to cancel an order for the
+// client's wallet. It uses the client's wallet ID and the provided order ID to
+// construct the request. The method first retrieves the latest wallet state,
+// cancels the order locally, and then sends the update to the API.
+//
+// Parameters:
+//   - orderId: The UUID of the order to cancel.
+//
+// Returns:
+//   - *api_types.CancelOrderResponse: Contains the task ID and the canceled order if successful.
+//   - error: An error if the order cancellation fails, nil otherwise.
+func (c *RenegadeClient) CancelOrder(orderId uuid.UUID) (*api_types.CancelOrderResponse, error) {
+	return c.cancelOrder(orderId)
 }
 
 // --- Helpers --- //

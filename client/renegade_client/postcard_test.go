@@ -23,7 +23,7 @@ func TestPostcardSerializeTransfer(t *testing.T) {
 	amount, ok := new(big.Int).SetString("126209657132758792812493270134108375288", 10)
 	assert.True(t, ok)
 
-	serialized, err := postcardSerializeTransfer(mintHex, amount, &addrHex)
+	serialized, err := postcardSerializeTransfer(mintHex, amount, addrHex)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedOutput, serialized)
 }

@@ -15,6 +15,8 @@ const (
 	Buy OrderSide = iota
 	Sell
 )
+const OrderSide_BUY = 0
+const OrderSide_SELL = 1
 
 func (s *OrderSide) FromScalars(scalars *ScalarIterator) error {
 	scalar, err := scalars.Next()
