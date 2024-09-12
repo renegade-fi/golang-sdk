@@ -3,6 +3,8 @@ package wallet
 import (
 	"fmt"
 	"math/big"
+
+	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 )
 
 // Balance is a balance in the Renegade system
@@ -57,6 +59,26 @@ func (w *Wallet) AddBalance(balance Balance) error {
 		return fmt.Errorf("wallet already has the maximum number of balances")
 	}
 
+	return nil
+}
+
+// RemoveBalance removes a balance from the wallet
+func (w *Wallet) RemoveBalance(balance Balance) error {
+	// Find the balance to remove
+	idx := w.findMatchingBalance(balance.Mint)
+	if idx == -1 {
+		return fmt.Errorf("balance not found")
+	}
+
+	// Remove the balance
+	amt1 := fr.Element(w.Balances[idx].Amount)
+	amt2 := fr.Element(balance.Amount)
+
+	if amt1.Cmp(&amt2) < 0 {
+		return fmt.Errorf("balance is less than the amount to remove")
+	}
+
+	w.Balances[idx].Amount = w.Balances[idx].Amount.Sub(balance.Amount)
 	return nil
 }
 
