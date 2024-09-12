@@ -5,16 +5,8 @@ import (
 	"renegade.fi/golang-sdk/wallet"
 )
 
-// GetWallet retrieves a wallet from the relayer.
-//
-// Returns:
-//   - *api_types.ApiWallet: The retrieved wallet, if successful.
-//   - error: An error if the retrieval fails, nil otherwise.
-//
-// The method uses the client's wallet secrets to construct the API path
-// and sends a GET request to the relayer. If successful, it returns the
-// wallet data in the ApiWallet format.
-func (c *RenegadeClient) GetWallet() (*api_types.ApiWallet, error) {
+// getWallet retrieves a wallet from the relayer
+func (c *RenegadeClient) getWallet() (*wallet.Wallet, error) {
 	walletId := c.walletSecrets.Id
 	path := api_types.BuildGetWalletPath(walletId)
 
@@ -24,22 +16,17 @@ func (c *RenegadeClient) GetWallet() (*api_types.ApiWallet, error) {
 		return nil, err
 	}
 
-	return &resp.Wallet, nil
+	// Convert the ApiWallet to a Wallet
+	wallet, err := resp.Wallet.ToWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	return wallet, nil
 }
 
-// GetBackOfQueueWallet retrieves the wallet at the back of the processing queue from the relayer.
-//
-// This method sends a GET request to fetch the wallet state after all pending tasks
-// in its queue have been processed. It's useful for getting the most up-to-date
-// wallet state when there are known pending operations.
-//
-// Returns:
-//   - *api_types.ApiWallet: The retrieved wallet at the back of the queue, if successful.
-//   - error: An error if the retrieval fails, nil otherwise.
-//
-// The method uses the client's wallet ID to construct the API path and sends
-// an authenticated GET request to the relayer.
-func (c *RenegadeClient) GetBackOfQueueWallet() (*api_types.ApiWallet, error) {
+// getBackOfQueueWallet retrieves the wallet at the back of the processing queue from the relayer
+func (c *RenegadeClient) getBackOfQueueWallet() (*wallet.Wallet, error) {
 	walletId := c.walletSecrets.Id
 	path := api_types.BuildBackOfQueueWalletPath(walletId)
 
@@ -54,7 +41,13 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*api_types.ApiWallet, error) {
 	w := &resp.Wallet
 	w.KeyChain.PrivateKeys.SkRoot = &rootKey
 
-	return w, nil
+	// Convert the ApiWallet to a Wallet
+	wallet, err := w.ToWallet()
+	if err != nil {
+		return nil, err
+	}
+
+	return wallet, nil
 }
 
 // LookupWallet looks up a wallet in the relayer from contract state.
@@ -69,7 +62,7 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*api_types.ApiWallet, error) {
 // The method constructs a LookupWalletRequest with the wallet ID, blinder seed,
 // share seed, and private keychain (excluding the root key). It then sends a POST
 // request to the relayer and returns the response.
-func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error) {
+func (c *RenegadeClient) lookupWallet() (*api_types.LookupWalletResponse, error) {
 	walletId := c.walletSecrets.Id
 	path := api_types.LookupWalletPath
 
@@ -112,7 +105,7 @@ func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error)
 // The method uses the client's wallet ID to construct the API path and sends a POST request
 // to the relayer. If successful, it returns the response containing the task ID for tracking
 // the refresh operation.
-func (c *RenegadeClient) RefreshWallet() (*api_types.RefreshWalletResponse, error) {
+func (c *RenegadeClient) refreshWallet() (*api_types.RefreshWalletResponse, error) {
 	walletId := c.walletSecrets.Id
 	path := api_types.BuildRefreshWalletPath(walletId)
 
@@ -134,7 +127,7 @@ func (c *RenegadeClient) RefreshWallet() (*api_types.RefreshWalletResponse, erro
 // The method generates a new Renegade wallet using the client's wallet secrets,
 // submits a creation request to the Renegade API, and returns the response.
 // This wallet can be used for private transactions within the Renegade network.
-func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error) {
+func (c *RenegadeClient) createWallet() (*api_types.CreateWalletResponse, error) {
 	// Create a new empty wallet from the base key
 	newWallet, err := wallet.NewEmptyWalletFromSecrets(c.walletSecrets)
 	if err != nil {

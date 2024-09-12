@@ -161,6 +161,8 @@ func (s *Scalar) FromBigInt(i *big.Int) Scalar {
 type WalletSecrets struct {
 	// Id is the UUID of the wallet
 	Id uuid.UUID
+	// Address is the Ethereum address of the wallet
+	Address string
 	// Keychain is the keychain used to manage the wallet
 	Keychain *Keychain
 	// BlinderSeed is the seed of the CSPRNG used to generate blinders and blinder shares
@@ -171,6 +173,8 @@ type WalletSecrets struct {
 
 // DeriveWalletSecrets derives the wallet secrets from the given Ethereum private key
 func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecrets, error) {
+	address := crypto.PubkeyToAddress(ethKey.PublicKey).Hex()
+
 	walletId, err := DeriveWalletID(ethKey, chainId)
 	if err != nil {
 		return nil, err
@@ -188,6 +192,7 @@ func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecre
 
 	return &WalletSecrets{
 		Id:          walletId,
+		Address:     address,
 		Keychain:    keychain,
 		BlinderSeed: blinderSeed,
 		ShareSeed:   shareSeed,
@@ -298,7 +303,7 @@ func CombineShares(publicShare WalletShare, privateShare WalletShare, blinder Sc
 
 // Wallet is a wallet in the Renegade system
 type Wallet struct {
-	ID                  uuid.UUID
+	Id                  uuid.UUID
 	Orders              []Order
 	Balances            []Balance
 	Keychain            *Keychain
@@ -343,7 +348,7 @@ func NewEmptyWalletFromSecrets(secrets *WalletSecrets) (*Wallet, error) {
 	publicShare.Blinder = blinder.Sub(blinderPrivateShare)
 
 	return &Wallet{
-		ID:       walletId,
+		Id:       walletId,
 		Orders:   make([]Order, 0),
 		Balances: make([]Balance, 0),
 		Keychain: keychain,

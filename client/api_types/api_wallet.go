@@ -318,7 +318,7 @@ type ApiWallet struct {
 }
 
 func (a *ApiWallet) FromWallet(w *wallet.Wallet) (*ApiWallet, error) {
-	a.Id = w.ID
+	a.Id = w.Id
 
 	// Convert orders
 	a.Orders = make([]ApiOrder, len(w.Orders))
@@ -377,7 +377,7 @@ func (a *ApiWallet) ToWallet() (*wallet.Wallet, error) {
 	w := &wallet.Wallet{}
 
 	// Convert ID
-	w.ID = a.Id
+	w.Id = a.Id
 
 	// Convert orders
 	w.Orders = make([]wallet.Order, len(a.Orders))

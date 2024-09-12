@@ -5,7 +5,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
@@ -19,22 +18,16 @@ import (
 	"renegade.fi/golang-sdk/wallet"
 )
 
-// Deposit deposits funds into the wallet
-func (c *RenegadeClient) Deposit(mint *string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.DepositResponse, error) {
+// deposit deposits funds into the wallet
+func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.DepositResponse, error) {
 	// Get the back of the queue wallet
-	apiWallet, err := c.GetBackOfQueueWallet()
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the API wallet to a wallet
-	backOfQueueWallet, err := apiWallet.ToWallet()
+	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
 		return nil, err
 	}
 
 	// Add the balance to the wallet
-	bal := wallet.NewBalanceBuilder().WithMintHex(*mint).WithAmountBigInt(amount).Build()
+	bal := wallet.NewBalanceBuilder().WithMintHex(mint).WithAmountBigInt(amount).Build()
 	err = backOfQueueWallet.AddBalance(bal)
 	if err != nil {
 		return nil, err
@@ -42,7 +35,7 @@ func (c *RenegadeClient) Deposit(mint *string, amount *big.Int, ethPrivateKey *e
 	backOfQueueWallet.Reblind()
 
 	// Approve Permit2 contract to spend the deposited amount
-	req, err := c.setupDeposit(*mint, amount, ethPrivateKey)
+	req, err := c.setupDeposit(mint, amount, ethPrivateKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup deposit: %w", err)
 	}
@@ -95,22 +88,16 @@ func (c *RenegadeClient) setupDeposit(mint string, amount *big.Int, ethPrivateKe
 	}, nil
 }
 
-// Withdraw withdraws funds from the wallet to the address for the given private key
-func (c *RenegadeClient) Withdraw(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.WithdrawResponse, error) {
-	addr := hex.EncodeToString(crypto.PubkeyToAddress(ethPrivateKey.PublicKey).Bytes())
-	return c.WithdrawToAddress(mint, amount, &addr)
+// withdraw withdraws funds from the wallet to the address for the given private key
+func (c *RenegadeClient) withdraw(mint string, amount *big.Int) (*api_types.WithdrawResponse, error) {
+	addr := c.walletSecrets.Address
+	return c.withdrawToAddress(mint, amount, addr)
 }
 
 // WithdrawToAddress withdraws funds from the wallet to the given address
-func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destination *string) (*api_types.WithdrawResponse, error) {
+func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destination string) (*api_types.WithdrawResponse, error) {
 	// Get the back of the queue wallet
-	apiWallet, err := c.GetBackOfQueueWallet()
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the API wallet to a wallet
-	backOfQueueWallet, err := apiWallet.ToWallet()
+	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +126,7 @@ func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destina
 
 	// Create the withdraw request
 	req := &api_types.WithdrawRequest{
-		DestinationAddr:           *destination,
+		DestinationAddr:           destination,
 		Amount:                    amount.String(),
 		ExternalTransferSig:       externalTransferSig,
 		WalletUpdateAuthorization: *auth,
@@ -270,7 +257,7 @@ func (c *RenegadeClient) generatePermit2Signature(mint string, amount *big.Int, 
 }
 
 // generateWithdrawalSignature generates a signature for the withdrawal
-func (c *RenegadeClient) generateWithdrawalSignature(mint string, amount *big.Int, destination *string) (*string, error) {
+func (c *RenegadeClient) generateWithdrawalSignature(mint string, amount *big.Int, destination string) (*string, error) {
 	rootKey := ecdsa.PrivateKey(*c.walletSecrets.Keychain.SkRoot())
 	sigBytes, err := postcardSerializeTransfer(mint, amount, destination)
 	if err != nil {

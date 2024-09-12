@@ -6,24 +6,10 @@ import (
 	"renegade.fi/golang-sdk/wallet"
 )
 
-// PlaceOrder creates an order on the Renegade API.
-//
-// This method sends a request to the Renegade API to create an order for a specified
-// token pair. It uses the client's wallet ID and the provided token details to construct
-// the request.
-//
-// Returns:
-//   - *api_types.CreateOrderResponse: Contains the order ID and task ID if successful.
-//   - error: An error if the order creation fails, nil otherwise.
-func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*api_types.CreateOrderResponse, error) {
+// placeOrder creates an order via the Renegade API
+func (c *RenegadeClient) placeOrder(order *wallet.Order) (*api_types.CreateOrderResponse, error) {
 	// Get the back of the queue wallet
-	apiWallet, err := c.GetBackOfQueueWallet()
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the API wallet to a wallet
-	backOfQueueWallet, err := apiWallet.ToWallet()
+	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
 		return nil, err
 	}
@@ -64,28 +50,10 @@ func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*api_types.CreateOrder
 	return &resp, nil
 }
 
-// CancelOrder cancels an order on the Renegade API.
-//
-// This method sends a request to the Renegade API to cancel an order for the
-// client's wallet. It uses the client's wallet ID and the provided order ID to
-// construct the request. The method first retrieves the latest wallet state,
-// cancels the order locally, and then sends the update to the API.
-//
-// Parameters:
-//   - orderId: The UUID of the order to cancel.
-//
-// Returns:
-//   - *api_types.CancelOrderResponse: Contains the task ID and the canceled order if successful.
-//   - error: An error if the order cancellation fails, nil otherwise.
-func (c *RenegadeClient) CancelOrder(orderId uuid.UUID) (*api_types.CancelOrderResponse, error) {
+// cancelOrder cancels an order via the Renegade API
+func (c *RenegadeClient) cancelOrder(orderId uuid.UUID) (*api_types.CancelOrderResponse, error) {
 	// Get the back of the queue wallet
-	apiWallet, err := c.GetBackOfQueueWallet()
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert the API wallet to a wallet
-	backOfQueueWallet, err := apiWallet.ToWallet()
+	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
 		return nil, err
 	}
