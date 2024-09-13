@@ -25,6 +25,8 @@ const (
 	DepositPath = "/v0/wallet/%s/balances/deposit"
 	// WithdrawPath is the path for the Withdraw action
 	WithdrawPath = "/v0/wallet/%s/balances/%s/withdraw"
+	// TaskHistoryPath is the path to fetch the task history for a wallet
+	TaskHistoryPath = "/v0/wallet/%s/task-history"
 )
 
 type ScalarLimbs [secretShareLimbCount]uint32
@@ -70,6 +72,11 @@ func BuildDepositPath(walletId uuid.UUID) string {
 // BuildWithdrawPath builds the path for the Withdraw action
 func BuildWithdrawPath(walletId uuid.UUID, mint string) string {
 	return fmt.Sprintf(WithdrawPath, walletId, mint)
+}
+
+// BuildTaskHistoryPath builds the path for the TaskHistory action
+func BuildTaskHistoryPath(walletId uuid.UUID) string {
+	return fmt.Sprintf(TaskHistoryPath, walletId)
 }
 
 // GetWalletResponse is the response body for a GetWallet request
@@ -176,4 +183,20 @@ type WithdrawRequest struct {
 type WithdrawResponse struct {
 	// TaskId is the ID of the task that was created to update the wallet
 	TaskId uuid.UUID `json:"task_id"`
+}
+
+// ApiHistoricalTask represents a historical task
+type ApiHistoricalTask struct {
+	// ID is the identifier of the task
+	Id uuid.UUID `json:"id"`
+	// State is the current state of the task
+	State string `json:"state"`
+	// CreatedAt is the timestamp when the task was created
+	CreatedAt uint64 `json:"created_at"`
+}
+
+// TaskHistoryResponse is the response body for the TaskHistory endpoint
+type TaskHistoryResponse struct {
+	// Tasks is the list of tasks in the queue
+	Tasks []ApiHistoricalTask `json:"tasks"`
 }

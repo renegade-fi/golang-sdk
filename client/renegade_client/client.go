@@ -116,8 +116,11 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*wallet.Wallet, error) {
 // The method constructs a LookupWalletRequest with the wallet ID, blinder seed,
 // share seed, and private keychain (excluding the root key). It then sends a POST
 // request to the relayer and returns the response.
-func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error) {
-	return c.lookupWallet()
+func (c *RenegadeClient) LookupWallet() (*wallet.Wallet, error) {
+	if err := c.lookupWallet(true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.getWallet()
 }
 
 // RefreshWallet refreshes the relayer's view of the wallet's state by looking up the wallet on-chain.
@@ -133,8 +136,11 @@ func (c *RenegadeClient) LookupWallet() (*api_types.LookupWalletResponse, error)
 // The method uses the client's wallet ID to construct the API path and sends a POST request
 // to the relayer. If successful, it returns the response containing the task ID for tracking
 // the refresh operation.
-func (c *RenegadeClient) RefreshWallet() (*api_types.RefreshWalletResponse, error) {
-	return c.refreshWallet()
+func (c *RenegadeClient) RefreshWallet() (*wallet.Wallet, error) {
+	if err := c.refreshWallet(true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.getWallet()
 }
 
 // CreateWallet creates a new wallet derived from the client's wallet secrets.
@@ -146,8 +152,11 @@ func (c *RenegadeClient) RefreshWallet() (*api_types.RefreshWalletResponse, erro
 // The method generates a new Renegade wallet using the client's wallet secrets,
 // submits a creation request to the Renegade API, and returns the response.
 // This wallet can be used for private transactions within the Renegade network.
-func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error) {
-	return c.createWallet()
+func (c *RenegadeClient) CreateWallet() (*wallet.Wallet, error) {
+	if err := c.createWallet(true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.getWallet()
 }
 
 // Deposit deposits funds into the wallet associated with the client.
@@ -170,8 +179,11 @@ func (c *RenegadeClient) CreateWallet() (*api_types.CreateWalletResponse, error)
 // The method handles the entire deposit flow, including updating the local wallet
 // state, approving the Permit2 contract for spending, and submitting the deposit
 // request to the Renegade relayer.
-func (c *RenegadeClient) Deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.DepositResponse, error) {
-	return c.deposit(mint, amount, ethPrivateKey)
+func (c *RenegadeClient) Deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*wallet.Wallet, error) {
+	if err := c.deposit(mint, amount, ethPrivateKey, true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.GetWallet()
 }
 
 // Withdraw initiates a withdrawal transaction, removing the specified amount
@@ -188,13 +200,19 @@ func (c *RenegadeClient) Deposit(mint string, amount *big.Int, ethPrivateKey *ec
 //   - *api_types.WithdrawResponse: Contains information about the withdrawal transaction,
 //     including the task ID and any relevant details from the Renegade protocol.
 //   - error: An error if the withdrawal process fails, nil otherwise.
-func (c *RenegadeClient) Withdraw(mint string, amount *big.Int) (*api_types.WithdrawResponse, error) {
-	return c.withdraw(mint, amount)
+func (c *RenegadeClient) Withdraw(mint string, amount *big.Int) (*wallet.Wallet, error) {
+	if err := c.withdraw(mint, amount, true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.GetWallet()
 }
 
 // WithdrawToAddress withdraws funds from the wallet to the given address
-func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destination string) (*api_types.WithdrawResponse, error) {
-	return c.withdrawToAddress(mint, amount, destination)
+func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destination string) (*wallet.Wallet, error) {
+	if err := c.withdrawToAddress(mint, amount, destination, true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.GetWallet()
 }
 
 // PlaceOrder creates an order on the Renegade API.
@@ -206,8 +224,11 @@ func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destina
 // Returns:
 //   - *api_types.CreateOrderResponse: Contains the order ID and task ID if successful.
 //   - error: An error if the order creation fails, nil otherwise.
-func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*api_types.CreateOrderResponse, error) {
-	return c.placeOrder(order)
+func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*wallet.Wallet, error) {
+	if err := c.placeOrder(order, true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.GetWallet()
 }
 
 // CancelOrder cancels an order via the Renegade API.
@@ -223,8 +244,11 @@ func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*api_types.CreateOrder
 // Returns:
 //   - *api_types.CancelOrderResponse: Contains the task ID and the canceled order if successful.
 //   - error: An error if the order cancellation fails, nil otherwise.
-func (c *RenegadeClient) CancelOrder(orderId uuid.UUID) (*api_types.CancelOrderResponse, error) {
-	return c.cancelOrder(orderId)
+func (c *RenegadeClient) CancelOrder(orderId uuid.UUID) (*wallet.Wallet, error) {
+	if err := c.cancelOrder(orderId, true /* blocking */); err != nil {
+		return nil, err
+	}
+	return c.GetWallet()
 }
 
 // --- Helpers --- //

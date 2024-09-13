@@ -62,14 +62,14 @@ func (c *RenegadeClient) getBackOfQueueWallet() (*wallet.Wallet, error) {
 // The method constructs a LookupWalletRequest with the wallet ID, blinder seed,
 // share seed, and private keychain (excluding the root key). It then sends a POST
 // request to the relayer and returns the response.
-func (c *RenegadeClient) lookupWallet() (*api_types.LookupWalletResponse, error) {
+func (c *RenegadeClient) lookupWallet(blocking bool) error {
 	walletId := c.walletSecrets.Id
 	path := api_types.LookupWalletPath
 
 	// Build the request
 	keys, err := new(api_types.ApiPrivateKeychain).FromPrivateKeychain(&c.walletSecrets.Keychain.PrivateKeys)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	keys.SkRoot = nil // Omit the root key
 
@@ -86,10 +86,18 @@ func (c *RenegadeClient) lookupWallet() (*api_types.LookupWalletResponse, error)
 	resp := api_types.LookupWalletResponse{}
 	err = c.httpClient.PostWithAuth(path, request, &resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &resp, nil
+	// If blocking, wait for the task to complete
+	if blocking {
+		// Wait for the task to complete
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // RefreshWallet refreshes the relayer's view of the wallet's state by looking up the wallet on-chain.
@@ -105,17 +113,25 @@ func (c *RenegadeClient) lookupWallet() (*api_types.LookupWalletResponse, error)
 // The method uses the client's wallet ID to construct the API path and sends a POST request
 // to the relayer. If successful, it returns the response containing the task ID for tracking
 // the refresh operation.
-func (c *RenegadeClient) refreshWallet() (*api_types.RefreshWalletResponse, error) {
+func (c *RenegadeClient) refreshWallet(blocking bool) error {
 	walletId := c.walletSecrets.Id
 	path := api_types.BuildRefreshWalletPath(walletId)
 
 	resp := api_types.RefreshWalletResponse{}
 	err := c.httpClient.PostWithAuth(path, nil, &resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &resp, nil
+	// If blocking, wait for the task to complete
+	if blocking {
+		// Wait for the task to complete
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // CreateWallet creates a new wallet derived from the client's wallet secrets.
@@ -127,16 +143,16 @@ func (c *RenegadeClient) refreshWallet() (*api_types.RefreshWalletResponse, erro
 // The method generates a new Renegade wallet using the client's wallet secrets,
 // submits a creation request to the Renegade API, and returns the response.
 // This wallet can be used for private transactions within the Renegade network.
-func (c *RenegadeClient) createWallet() (*api_types.CreateWalletResponse, error) {
+func (c *RenegadeClient) createWallet(blocking bool) error {
 	// Create a new empty wallet from the base key
 	newWallet, err := wallet.NewEmptyWalletFromSecrets(c.walletSecrets)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	apiWallet, err := new(api_types.ApiWallet).FromWallet(newWallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Omit the root key
 	apiWallet.KeyChain.PrivateKeys.SkRoot = nil
@@ -148,8 +164,16 @@ func (c *RenegadeClient) createWallet() (*api_types.CreateWalletResponse, error)
 	resp := api_types.CreateWalletResponse{}
 	err = c.httpClient.PostWithAuth(api_types.CreateWalletPath, request, &resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &resp, nil
+	// If blocking, wait for the task to complete
+	if blocking {
+		// Wait for the task to complete
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
