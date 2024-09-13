@@ -19,31 +19,31 @@ import (
 )
 
 // deposit deposits funds into the wallet
-func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.DepositResponse, error) {
+func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey, blocking bool) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Add the balance to the wallet
 	bal := wallet.NewBalanceBuilder().WithMintHex(mint).WithAmountBigInt(amount).Build()
 	err = backOfQueueWallet.AddBalance(bal)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	backOfQueueWallet.Reblind()
 
 	// Approve Permit2 contract to spend the deposited amount
 	req, err := c.setupDeposit(mint, amount, ethPrivateKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup deposit: %w", err)
+		return fmt.Errorf("failed to setup deposit: %w", err)
 	}
 
 	// Get the wallet update auth
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.WalletUpdateAuthorization = *auth
 
@@ -54,10 +54,16 @@ func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ec
 	resp := api_types.DepositResponse{}
 	err = c.httpClient.PostWithAuth(path, req, &resp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to post deposit request: %w", err)
+		return fmt.Errorf("failed to post deposit request: %w", err)
 	}
 
-	return &resp, nil
+	if blocking {
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // setupDeposit sets up the deposit request, this includes approving the Permit2 contract, and generating the witness and signature
@@ -89,31 +95,31 @@ func (c *RenegadeClient) setupDeposit(mint string, amount *big.Int, ethPrivateKe
 }
 
 // withdraw withdraws funds from the wallet to the address for the given private key
-func (c *RenegadeClient) withdraw(mint string, amount *big.Int) (*api_types.WithdrawResponse, error) {
+func (c *RenegadeClient) withdraw(mint string, amount *big.Int, blocking bool) error {
 	addr := c.walletSecrets.Address
-	return c.withdrawToAddress(mint, amount, addr)
+	return c.withdrawToAddress(mint, amount, addr, blocking)
 }
 
 // WithdrawToAddress withdraws funds from the wallet to the given address
-func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destination string) (*api_types.WithdrawResponse, error) {
+func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destination string, blocking bool) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Remove the balance from the wallet
 	bal := wallet.NewBalanceBuilder().WithMintHex(mint).WithAmountBigInt(amount).Build()
 	err = backOfQueueWallet.RemoveBalance(bal)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	backOfQueueWallet.Reblind()
 
 	// Get the wallet update auth
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Get the external transfer signature
@@ -121,7 +127,7 @@ func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destina
 
 	externalTransferSig, err := c.generateWithdrawalSignature(mint, amount, destination)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate external transfer signature: %w", err)
+		return fmt.Errorf("failed to generate external transfer signature: %w", err)
 	}
 
 	// Create the withdraw request
@@ -137,10 +143,16 @@ func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destina
 	var resp api_types.WithdrawResponse
 	err = c.httpClient.PostWithAuth(path, req, &resp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to post withdraw request: %w", err)
+		return fmt.Errorf("failed to post withdraw request: %w", err)
 	}
 
-	return &resp, nil
+	if blocking {
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // --- Helpers --- //

@@ -7,30 +7,30 @@ import (
 )
 
 // placeOrder creates an order via the Renegade API
-func (c *RenegadeClient) placeOrder(order *wallet.Order) (*api_types.CreateOrderResponse, error) {
+func (c *RenegadeClient) placeOrder(order *wallet.Order, blocking bool) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Add the order to the wallet and reblind
 	err = backOfQueueWallet.NewOrder(*order)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	backOfQueueWallet.Reblind()
 
 	// Sign the commitment to the new wallet
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Post the order to the relayer
 	apiOrder, err := new(api_types.ApiOrder).FromOrder(order)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req := api_types.CreateOrderRequest{
@@ -44,31 +44,38 @@ func (c *RenegadeClient) placeOrder(order *wallet.Order) (*api_types.CreateOrder
 
 	err = c.httpClient.PostWithAuth(path, req, &resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &resp, nil
+	// If blocking, wait for the task to complete
+	if blocking {
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // cancelOrder cancels an order via the Renegade API
-func (c *RenegadeClient) cancelOrder(orderId uuid.UUID) (*api_types.CancelOrderResponse, error) {
+func (c *RenegadeClient) cancelOrder(orderId uuid.UUID, blocking bool) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Cancel the order
 	err = backOfQueueWallet.CancelOrder(orderId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	backOfQueueWallet.Reblind()
 
 	// Get the wallet update auth
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Post the order to the relayer
@@ -81,8 +88,15 @@ func (c *RenegadeClient) cancelOrder(orderId uuid.UUID) (*api_types.CancelOrderR
 	resp := api_types.CancelOrderResponse{}
 	err = c.httpClient.PostWithAuth(path, req, &resp)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &resp, nil
+	// If blocking, wait for the task to complete
+	if blocking {
+		if err := c.waitForTask(resp.TaskId); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
