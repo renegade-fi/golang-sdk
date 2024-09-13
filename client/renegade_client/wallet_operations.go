@@ -92,7 +92,7 @@ func (c *RenegadeClient) lookupWallet(blocking bool) error {
 	// If blocking, wait for the task to complete
 	if blocking {
 		// Wait for the task to complete
-		if err := c.waitForTask(resp.TaskId); err != nil {
+		if err := c.waitForTaskDirect(resp.TaskId); err != nil {
 			return err
 		}
 	}

@@ -27,6 +27,8 @@ const (
 	WithdrawPath = "/v0/wallet/%s/balances/%s/withdraw"
 	// PayFeesPath is the path to enqueue tasks to pay wallet fees
 	PayFeesPath = "/v0/wallet/%s/pay-fees"
+	// TaskStatusPath is the path to fetch the status of a task
+	TaskStatusPath = "/v0/tasks/%s"
 	// TaskHistoryPath is the path to fetch the task history for a wallet
 	TaskHistoryPath = "/v0/wallet/%s/task-history"
 )
@@ -79,6 +81,11 @@ func BuildWithdrawPath(walletId uuid.UUID, mint string) string {
 // BuildPayFeesPath builds the path for the PayFees action
 func BuildPayFeesPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(PayFeesPath, walletId)
+}
+
+// BuildTaskStatusPath builds the path for the TaskStatus action
+func BuildTaskStatusPath(taskId uuid.UUID) string {
+	return fmt.Sprintf(TaskStatusPath, taskId)
 }
 
 // BuildTaskHistoryPath builds the path for the TaskHistory action
@@ -196,6 +203,25 @@ type WithdrawResponse struct {
 type PayFeesResponse struct {
 	// TaskIds are the IDs of the tasks that were created to pay the fees
 	TaskIds []uuid.UUID `json:"task_ids"`
+}
+
+// ApiTaskStatus is the status of a running task
+// ApiTaskStatus represents the status of a task
+type ApiTaskStatus struct {
+	// ID is the identifier of the task
+	ID uuid.UUID `json:"id"`
+	// Description is the description of the task
+	Description string `json:"description"`
+	// State is the current state of the task
+	State string `json:"state"`
+	// Committed indicates whether the task has already committed
+	Committed bool `json:"committed"`
+}
+
+// TaskResponse is the response body for the Task endpoint
+type TaskResponse struct {
+	// Status is the current status of the task
+	Status ApiTaskStatus `json:"status"`
 }
 
 // ApiHistoricalTask represents a historical task

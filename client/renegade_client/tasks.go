@@ -31,34 +31,61 @@ func (c *RenegadeClient) getTaskHistory() ([]api_types.ApiHistoricalTask, error)
 }
 
 // getTask gets a task by id
-func (c *RenegadeClient) getTask(taskId uuid.UUID) (*api_types.ApiHistoricalTask, error) {
+func (c *RenegadeClient) getTaskStatusFromHistory(taskId uuid.UUID) (string, error) {
 	tasks, err := c.getTaskHistory()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	// Find the task
 	for _, task := range tasks {
 		if task.Id == taskId {
-			return &task, nil
+			return task.State, nil
 		}
 	}
 
-	return nil, fmt.Errorf("task not found")
+	return "", fmt.Errorf("task not found")
 }
 
-// waitForTask waits for a task to complete or until the timeout is reached
-func (c *RenegadeClient) waitForTask(taskId uuid.UUID) error {
+// getTaskStatusDirect gets the status of a task directly from the task endpoint
+func (c *RenegadeClient) getTaskStatusDirect(taskId uuid.UUID) (string, error) {
+	path := api_types.BuildTaskStatusPath(taskId)
+	resp := api_types.TaskResponse{}
+	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
+
+	// If the task is no longer registered, check task history
+	if err != nil && strings.Contains(err.Error(), "task not found") {
+		return c.getTaskStatusFromHistory(taskId)
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Status.State, nil
+}
+
+// getTaskStatus gets the status of a task by looking up the task in the task history
+func (c *RenegadeClient) getTaskStatus(taskId uuid.UUID, direct bool) (string, error) {
+	if direct {
+		return c.getTaskStatusDirect(taskId)
+	} else {
+		return c.getTaskStatusFromHistory(taskId)
+	}
+}
+
+// waitForTaskGeneric waits for a task to complete or until the timeout is reached
+func (c *RenegadeClient) waitForTaskGeneric(taskId uuid.UUID, direct bool) error {
 	log.Printf("waiting for task %s to complete", taskId)
 	deadline := time.Now().Add(taskTimeout)
 	for time.Now().Before(deadline) {
-		task, err := c.getTask(taskId)
+		state, err := c.getTaskStatus(taskId, direct)
 		if err != nil {
 			return err
 		}
 
-		state := strings.ToLower(task.State)
 		// Check for completion or failure
+		state = strings.ToLower(state)
 		if state == taskCompletedStatus {
 			log.Printf("task %s completed", taskId)
 			return nil
@@ -71,4 +98,14 @@ func (c *RenegadeClient) waitForTask(taskId uuid.UUID) error {
 	}
 
 	return fmt.Errorf("task timed out after %v", taskTimeout)
+}
+
+// waitForTask waits for a task to complete or until the timeout is reached
+func (c *RenegadeClient) waitForTask(taskId uuid.UUID) error {
+	return c.waitForTaskGeneric(taskId, false /* direct */)
+}
+
+// waitForTaskWithDirect waits for a task to complete or until the timeout is reached
+func (c *RenegadeClient) waitForTaskDirect(taskId uuid.UUID) error {
+	return c.waitForTaskGeneric(taskId, true /* direct */)
 }
