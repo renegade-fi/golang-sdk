@@ -18,15 +18,15 @@ import (
 
 const (
     // baseUrl is the location at which to dial the relayer
-    baseUrl = "http://testnet.cluster0.renegade.fi:3000"
+    baseUrl = "https://testnet.cluster0.renegade.fi:3000"
 )
 
 func main() {
-    // Practically speaking you will bring your own Arbitrum private key
-    privateKey, err := crypto.GenerateKey()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Practically speaking you will bring your own Arbitrum private key
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// Create a new renegade client
 	client, err := renegade_client.NewSepoliaRenegadeClient(baseUrl, privateKey)
@@ -54,10 +54,10 @@ This method will check for the configured wallet in the relayer's state. If not 
 Suppose we want to sell Bitcoin (wBTC) in the darkpool. The first step is to deposit from your configured arbitrum address:
 ```go
 wbtcMint := "0xa91d929ea161688448f61cb3865a6d948d8bd904"
-amount := big.NewInt(10000000000000000)  // 2^16
+amount := big.NewInt(1000000)  // 10^6
 wallet, err = client.Deposit(wbtcMint, amount, privateKey)
 ```
-Note that the amount field is _not_ decimal adjusted; for wBTC -- which has 18 decimals -- this translates to 0.01 wBTC. Tokens and their mint addresses that renegade supports can be found at the following locations:
+Note that the amount field is _not_ decimal adjusted; for wBTC -- which has 8 decimals on mainnet -- this translates to 0.01 wBTC. Tokens and their mint addresses that renegade supports can be found at the following locations:
 - [Arbitrum Sepolia](https://github.com/renegade-fi/token-mappings/blob/main/testnet.json)
 - [Arbitrum One Mainnet](https://github.com/renegade-fi/token-mappings/blob/main/mainnet.json)
 
@@ -68,7 +68,7 @@ Assuming we wish to sell the wBTC that we deposited in the previous step:
 ```go
 btcMint := "0xa91d929ea161688448f61cb3865a6d948d8bd904"
 usdcMint := "0x404b26cd9055b35581c68ba9a2b878cca971b0a7"
-amount := big.NewInt(10000000000000000) // Sell the whole balance
+amount, _ := wallet.GetBalance(btcMint) // Sell the whole balance
 order := renegade.NewOrderBuilder().
     WithBaseMintHex(baseMint).
     WithQuoteMintHex(quoteMint).
@@ -80,7 +80,7 @@ wallet, err = client.PlaceOrder(&order)
 ```
 **Note:** For the moment, all pairs are USDC quoted. E.g. Renegade does not currently support selling wBTC/wETH.
 
-Once the order is placed with a balance to capitalize it, the matching engine will match the order with any counter-flow it finds. 
+Once the order is placed with a balance to capitalize it, the matching engine will match the order with counter-flow that it finds. 
 
 ### Pay Fees and Withdraw
 Suppose the order above matched, and your wallet now holds roughly 600000000 USDC ($600 decimal adjusted), which you wish to withdraw back to your Arbitrum wallet. The first step is to pay fees. The Renegade protocol requires that all relayer and protocol fees are paid out before any balance is withdrawn. 
@@ -96,11 +96,11 @@ wallet, err = client.Withdraw(usdcMint, usdcBalance)
 
 ### Putting it Together
 ```go
-package renegade_demo
+package test
 
 import (
-	"fmt"
 	"log"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	renegade_client "github.com/renegade-fi/golang-sdk/client/renegade_client"
@@ -108,68 +108,91 @@ import (
 )
 
 const (
-    // baseUrl is the location at which to dial the relayer
-    baseUrl = "http://testnet.cluster0.renegade.fi:3000"
+	// baseUrl is the location at which to dial the relayer
+	baseUrl = "https://testnet.cluster0.renegade.fi:3000"
 )
 
 func main() {
-    // Practically speaking you will bring your own Arbitrum private key
-    privateKey, err := crypto.GenerateKey()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Practically speaking you will bring your own Arbitrum private key
+	privateKey, err := crypto.GenerateKey()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Create a new renegade client
-    client, err := renegade_client.NewSepoliaRenegadeClient(baseUrl, privateKey)
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Create a new renegade client
+	client, err := renegade_client.NewSepoliaRenegadeClient(baseUrl, privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Lookup your Renegade wallet (you should create one if not already done)
-    wallet, err := client.CheckWallet()
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Lookup your Renegade wallet (you should create one if not already done)
+	wallet, err := client.CheckWallet()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Deposit 0.01 wBTC
-    wbtcMint := "0xa91d929ea161688448f61cb3865a6d948d8bd904"
-    amount := big.NewInt(10000000000000000)  // 2^16
-    wallet, err = client.Deposit(wbtcMint, amount, privateKey)
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Deposit 0.01 wBTC
+	wbtcMint := "0xa91d929ea161688448f61cb3865a6d948d8bd904"
+	amount := big.NewInt(1000000) // 2^16
+	wallet, err = client.Deposit(wbtcMint, amount, privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Sell 0.01 wBTC
-    usdcMint := "0x404b26cd9055b35581c68ba9a2b878cca971b0a7"
-    amount, _ := wallet.GetBalance(wbtcMint)
-    order := renegade.NewOrderBuilder().
-        WithBaseMintHex(wbtcMint).
-        WithQuoteMintHex(usdcMint).
-        WithAmountBigInt(amount).
-        WithSide(renegade.OrderSide_SELL).
-        Build()
+	// Sell 0.01 wBTC
+	usdcMint := "0x404b26cd9055b35581c68ba9a2b878cca971b0a7"
+	amount, _ = wallet.GetBalance(wbtcMint)
+	order := renegade_wallet.NewOrderBuilder().
+		WithBaseMintHex(wbtcMint).
+		WithQuoteMintHex(usdcMint).
+		WithAmountBigInt(amount).
+		WithSide(renegade_wallet.OrderSide_SELL).
+		Build()
 
-    wallet, err = client.PlaceOrder(&order)
-    if err != nil {
-        log.Fatal(err)
-    }
+	wallet, err = client.PlaceOrder(&order)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // ... Matching Engine Matches Order ... //
+	// ... Matching Engine Matches Order ... //
 
-    // Pay fees and withdraw
-    wallet, err = client.PayFees()
-    if err != nil { 
-        log.Fatal(err) 
-    }
+	// Pay fees and withdraw
+	wallet, err = client.PayFees()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    usdcBalance, _ := wallet.GetBalance(usdcMint)
-    wallet, err = client.Withdraw(usdcMint, usdcBalance)
-    if err != nil {
-        log.Fatal(err)
-    }
+	usdcBalance, _ := wallet.GetBalance(usdcMint)
+	wallet, err = client.Withdraw(usdcMint, usdcBalance)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
+
 ```
 
-## Other Worthwhile Methods
+## Other Methods and Notes
 ### Cancelling an Order
-To cancel an open order, 
+```go
+orderId := wallet.Orders[0].Id
+wallet, err := client.CancelOrder(orderId)
+```
+
+### Reading Balances and Orders
+To get the non-empty balances and orders on a wallet:
+```go
+balances := wallet.GetNonzeroBalances()
+orders := wallet.GetNonzeroOrders()
+```
+
+The types on these balance fields are `wallet.Scalar` types. These represent values in our zero-knowledge proof system, but can sometimes be difficult to work with otherwise. For that reason, the scalar type implements a few methods that convert to/from more ergonomic types.
+```go
+amount := wallet.Balances[0].Amount // type `Scalar`
+amtBigint := amount.ToBigInt() // type `*big.Int`
+amtHexString := amount.ToHexString() // type `string`
+```
+
+### `MAX_BALANCES` and `MAX_ORDERS`
+Because our system encodes all its computation in zero-knowledge "circuits", the size of each wallet must be known ahead of time. To this end, we impose the restriction that each wallet has at most `MAX_BALANCES = 10` balances, and `MAX_ORDERS = 4` orders. 
+
+The SDK and the relayer will prevent you from allocating more balances and orders than are allowed.
