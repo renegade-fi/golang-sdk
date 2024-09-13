@@ -42,6 +42,21 @@ func (b *Balance) IsZero() bool {
 	return b.Amount.IsZero() && b.RelayerFeeBalance.IsZero() && b.ProtocolFeeBalance.IsZero()
 }
 
+// GetBalance gets the balance for a given mint
+func (w *Wallet) GetBalance(mint string) (big.Int, error) {
+	mintScalar, err := new(Scalar).FromHexString(mint)
+	if err != nil {
+		return big.Int{}, err
+	}
+
+	idx := w.findMatchingBalance(mintScalar)
+	if idx == -1 {
+		return big.Int{}, fmt.Errorf("balance not found for mint: %s", mint)
+	}
+
+	return *w.Balances[idx].Amount.ToBigInt(), nil
+}
+
 // AddBalance appends a balance to the wallet
 func (w *Wallet) AddBalance(balance Balance) error {
 	// Find an existing balance for the mint if one exists
