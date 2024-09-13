@@ -57,6 +57,17 @@ func (w *Wallet) GetBalance(mint string) (*big.Int, error) {
 	return w.Balances[idx].Amount.ToBigInt(), nil
 }
 
+// GetNonzeroBalances gets all non-zero balances in a wallet
+func (w *Wallet) GetNonzeroBalances() []Balance {
+	nonzeroBalances := make([]Balance, 0)
+	for _, balance := range w.Balances {
+		if !balance.IsZero() {
+			nonzeroBalances = append(nonzeroBalances, balance)
+		}
+	}
+	return nonzeroBalances
+}
+
 // AddBalance appends a balance to the wallet
 func (w *Wallet) AddBalance(balance Balance) error {
 	// Find an existing balance for the mint if one exists

@@ -167,6 +167,18 @@ func (o *Order) IsZero() bool {
 	return o.Amount.IsZero()
 }
 
+// GetNonzeroOrders gets all non-empty orders
+func (w *Wallet) GetNonzeroOrders() []Order {
+	nonzeroOrders := make([]Order, 0)
+	for _, order := range w.Orders {
+		if !order.IsZero() {
+			nonzeroOrders = append(nonzeroOrders, order)
+		}
+	}
+
+	return nonzeroOrders
+}
+
 // NewOrder appends an order to the wallet
 func (w *Wallet) NewOrder(order Order) error {
 	// Find the first order that may be replaced
