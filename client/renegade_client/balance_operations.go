@@ -155,6 +155,18 @@ func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destina
 	return nil
 }
 
+// payFees pays the fees for the wallet
+func (c *RenegadeClient) payFees() error {
+	path := api_types.BuildPayFeesPath(c.walletSecrets.Id)
+	resp := api_types.PayFeesResponse{}
+	err := c.httpClient.PostWithAuth(path, nil /* body */, &resp)
+	if err != nil {
+		return fmt.Errorf("failed to pay fees: %w", err)
+	}
+
+	return nil
+}
+
 // --- Helpers --- //
 
 // approvePermit2Deposit approves the Permit2 contract to spend the deposited amount

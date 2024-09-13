@@ -215,6 +215,15 @@ func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destina
 	return c.GetWallet()
 }
 
+// PayFees pays the fees for the wallet
+func (c *RenegadeClient) PayFees() (*wallet.Wallet, error) {
+	if err := c.payFees(); err != nil {
+		return nil, err
+	}
+
+	return c.getBackOfQueueWallet()
+}
+
 // PlaceOrder creates an order on the Renegade API.
 //
 // This method sends a request to the Renegade API to create an order for a specified

@@ -25,6 +25,8 @@ const (
 	DepositPath = "/v0/wallet/%s/balances/deposit"
 	// WithdrawPath is the path for the Withdraw action
 	WithdrawPath = "/v0/wallet/%s/balances/%s/withdraw"
+	// PayFeesPath is the path to enqueue tasks to pay wallet fees
+	PayFeesPath = "/v0/wallet/%s/pay-fees"
 	// TaskHistoryPath is the path to fetch the task history for a wallet
 	TaskHistoryPath = "/v0/wallet/%s/task-history"
 )
@@ -72,6 +74,11 @@ func BuildDepositPath(walletId uuid.UUID) string {
 // BuildWithdrawPath builds the path for the Withdraw action
 func BuildWithdrawPath(walletId uuid.UUID, mint string) string {
 	return fmt.Sprintf(WithdrawPath, walletId, mint)
+}
+
+// BuildPayFeesPath builds the path for the PayFees action
+func BuildPayFeesPath(walletId uuid.UUID) string {
+	return fmt.Sprintf(PayFeesPath, walletId)
 }
 
 // BuildTaskHistoryPath builds the path for the TaskHistory action
@@ -183,6 +190,12 @@ type WithdrawRequest struct {
 type WithdrawResponse struct {
 	// TaskId is the ID of the task that was created to update the wallet
 	TaskId uuid.UUID `json:"task_id"`
+}
+
+// PayFeesResponse is the response body for the PayFees action
+type PayFeesResponse struct {
+	// TaskIds are the IDs of the tasks that were created to pay the fees
+	TaskIds []uuid.UUID `json:"task_ids"`
 }
 
 // ApiHistoricalTask represents a historical task
