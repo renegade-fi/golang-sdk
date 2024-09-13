@@ -8,7 +8,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
 	"github.com/google/uuid"
 
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 // The number of u32 limbs in the serialized form of a secret share

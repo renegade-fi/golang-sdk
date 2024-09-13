@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	"github.com/renegade-fi/golang-sdk/wallet"
 	"github.com/stretchr/testify/assert"
-	"renegade.fi/golang-sdk/wallet"
 )
 
 func TestScalarUintLimbConversion(t *testing.T) {

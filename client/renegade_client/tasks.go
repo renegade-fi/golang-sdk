@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"renegade.fi/golang-sdk/client/api_types"
+	"github.com/renegade-fi/golang-sdk/client/api_types"
 )
 
 const (

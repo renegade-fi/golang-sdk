@@ -3,7 +3,7 @@ package api_types
 import (
 	"math/big"
 
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 // ScalarToUintLimbs converts a scalar to an array of uint32 limbs

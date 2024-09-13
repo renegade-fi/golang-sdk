@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"renegade.fi/golang-sdk/abis"
+	"github.com/renegade-fi/golang-sdk/abis"
 )
 
 type PermitWitnessTransferFrom struct {

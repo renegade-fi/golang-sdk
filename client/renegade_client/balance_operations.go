@@ -13,9 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"renegade.fi/golang-sdk/abis"
-	"renegade.fi/golang-sdk/client/api_types"
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/abis"
+	"github.com/renegade-fi/golang-sdk/client/api_types"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 // deposit deposits funds into the wallet

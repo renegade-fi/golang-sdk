@@ -1,8 +1,8 @@
 package client
 
 import (
-	"renegade.fi/golang-sdk/client/api_types"
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/client/api_types"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 // getWallet retrieves a wallet from the relayer

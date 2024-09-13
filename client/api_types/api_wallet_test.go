@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"github.com/renegade-fi/golang-sdk/wallet"
 	"github.com/stretchr/testify/assert"
-	"renegade.fi/golang-sdk/wallet"
 )
 
 func TestApiWalletConversion(t *testing.T) {
