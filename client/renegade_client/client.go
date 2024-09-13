@@ -104,6 +104,26 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*wallet.Wallet, error) {
 	return c.getBackOfQueueWallet()
 }
 
+// CheckWallet verifies the wallet's existence in the relayer's state and retrieves it from the blockchain if necessary.
+//
+// This method first attempts to fetch the wallet from the relayer's local state using GetWallet().
+// If successful, it returns the wallet immediately. If the wallet is not found in the local state,
+// it initiates a blockchain lookup using LookupWallet() to retrieve the wallet information.
+//
+// Returns:
+//   - *wallet.Wallet: The retrieved wallet, if found either in local state or on-chain.
+//   - error: An error if both local retrieval and on-chain lookup fail, nil otherwise.
+//
+// This method is useful for ensuring that the client has the most up-to-date wallet information,
+// especially in scenarios where the wallet might not be synchronized between the relayer and the blockchain.
+func (c *RenegadeClient) CheckWallet() (*wallet.Wallet, error) {
+	wallet, err := c.GetWallet()
+	if err == nil {
+		return wallet, nil
+	}
+	return c.LookupWallet()
+}
+
 // LookupWallet looks up a wallet in the relayer from contract state.
 //
 // This method sends a request to the relayer to retrieve wallet information
@@ -215,7 +235,18 @@ func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destina
 	return c.GetWallet()
 }
 
-// PayFees pays the fees for the wallet
+// PayFees initiates the fee payment process for the wallet.
+//
+// This method sends a request to the Renegade API to pay any outstanding fees
+// associated with the client's wallet. It handles the entire fee payment flow,
+// including updating the local wallet state and submitting the fee payment
+// request to the Renegade relayer.
+//
+// Returns:
+//   - *wallet.Wallet: An updated wallet object reflecting the new state after fee payment.
+//   - error: An error if the fee payment process fails, nil otherwise.
+//
+// The method waits for the fee payment to be processed before returning the updated wallet.
 func (c *RenegadeClient) PayFees() (*wallet.Wallet, error) {
 	if err := c.payFees(); err != nil {
 		return nil, err
