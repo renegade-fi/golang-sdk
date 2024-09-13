@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
-	"renegade.fi/golang-sdk/client"
-	"renegade.fi/golang-sdk/client/api_types"
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/client"
+	"github.com/renegade-fi/golang-sdk/client/api_types"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 // ChainConfig represents the configuration for a specific chain

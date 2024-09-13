@@ -2,8 +2,8 @@ package client
 
 import (
 	"github.com/google/uuid"
-	"renegade.fi/golang-sdk/client/api_types"
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/client/api_types"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 // placeOrder creates an order via the Renegade API

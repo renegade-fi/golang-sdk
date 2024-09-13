@@ -1,4 +1,4 @@
-module renegade.fi/golang-sdk
+module github.com/renegade-fi/golang-sdk
 
 go 1.23.0
 

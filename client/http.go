@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"renegade.fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 const (

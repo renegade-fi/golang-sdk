@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/google/uuid"
 
-	renegade_crypto "renegade.fi/golang-sdk/crypto"
+	renegade_crypto "github.com/renegade-fi/golang-sdk/crypto"
 )
 
 const (
