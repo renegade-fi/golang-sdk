@@ -45,17 +45,17 @@ func NewHttpClient(baseURL string, authKey *wallet.HmacKey) *HttpClient {
 
 // Get performs a GET request to the specified path
 func (c *HttpClient) Get(path string, body interface{}) ([]byte, error) {
-	return c.doRequest(http.MethodGet, path, body, false /* withAuth */)
+	return c.doRequest(http.MethodGet, path, nil /* headers */, body, false /* withAuth */)
 }
 
 // Post performs a POST request to the specified path
 func (c *HttpClient) Post(path string, body interface{}) ([]byte, error) {
-	return c.doRequest(http.MethodPost, path, body, false /* withAuth */)
+	return c.doRequest(http.MethodPost, path, nil /* headers */, body, false /* withAuth */)
 }
 
 // GetJSON performs a GET request and unmarshals the response into the provided interface
 func (c *HttpClient) GetJSON(path string, body interface{}, response interface{}) error {
-	respBody, err := c.doRequest(http.MethodGet, path, body, false /* withAuth */)
+	respBody, err := c.doRequest(http.MethodGet, path, nil /* headers */, body, false /* withAuth */)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (c *HttpClient) GetJSON(path string, body interface{}, response interface{}
 
 // PostJSON performs a POST request and unmarshals the response into the provided interface
 func (c *HttpClient) PostJSON(path string, body interface{}, response interface{}) error {
-	respBody, err := c.doRequest(http.MethodPost, path, body, false /* withAuth */)
+	respBody, err := c.doRequest(http.MethodPost, path, nil /* headers */, body, false /* withAuth */)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,12 @@ func (c *HttpClient) PostJSON(path string, body interface{}, response interface{
 
 // GetWithAuth performs an authenticated GET request
 func (c *HttpClient) GetWithAuth(path string, body interface{}, response interface{}) error {
-	respBody, err := c.doRequest(http.MethodGet, path, body, true /* withAuth */)
+	return c.GetWithAuthAndHeaders(path, nil /* headers */, body, response)
+}
+
+// GetWithAuthAndHeaders performs an authenticated GET request with additional headers
+func (c *HttpClient) GetWithAuthAndHeaders(path string, headers *http.Header, body interface{}, response interface{}) error {
+	respBody, err := c.doRequest(http.MethodGet, path, headers, body, true /* withAuth */)
 	if err != nil {
 		return err
 	}
@@ -82,7 +87,12 @@ func (c *HttpClient) GetWithAuth(path string, body interface{}, response interfa
 
 // PostWithAuth performs an authenticated POST request
 func (c *HttpClient) PostWithAuth(path string, body interface{}, response interface{}) error {
-	respBody, err := c.doRequest(http.MethodPost, path, body, true /* withAuth */)
+	return c.PostWithAuthAndHeaders(path, nil /* headers */, body, response)
+}
+
+// PostWithAuthAndHeaders performs an authenticated POST request with additional headers
+func (c *HttpClient) PostWithAuthAndHeaders(path string, headers *http.Header, body interface{}, response interface{}) error {
+	respBody, err := c.doRequest(http.MethodPost, path, headers, body, true /* withAuth */)
 	if err != nil {
 		return err
 	}
@@ -90,7 +100,7 @@ func (c *HttpClient) PostWithAuth(path string, body interface{}, response interf
 }
 
 // doRequest performs an HTTP request with optional authentication
-func (c *HttpClient) doRequest(method, path string, body interface{}, withAuth bool) ([]byte, error) {
+func (c *HttpClient) doRequest(method, path string, headers *http.Header, body interface{}, withAuth bool) ([]byte, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	// Marshal the body
@@ -110,6 +120,7 @@ func (c *HttpClient) doRequest(method, path string, body interface{}, withAuth b
 	}
 
 	// Set headers
+	req.Header = *headers
 	req.Header.Set(contentTypeHeader, contentTypeJSON)
 	if withAuth {
 		c.addAuth(req, bodyBytes)
