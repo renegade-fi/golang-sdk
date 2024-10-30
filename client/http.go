@@ -10,18 +10,21 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 const (
-	contentTypeHeader   = "Content-Type"
-	contentTypeJSON     = "application/json"
-	signatureHeader     = "renegade-auth"
-	expirationHeader    = "renegade-auth-expiration"
-	signatureExpiration = 5 * time.Second
+	contentTypeHeader       = "Content-Type"
+	contentTypeJSON         = "application/json"
+	renegadeHeaderNamespace = "x-renegade"
+	signatureHeader         = "x-renegade-auth"
+	expirationHeader        = "x-renegade-auth-expiration"
+	signatureExpiration     = 5 * time.Second
 )
 
 // HttpClient represents an HTTP client with a base URL and auth key
@@ -138,12 +141,44 @@ func (c *HttpClient) addAuth(req *http.Request, bodyBytes []byte) {
 	expiration := time.Now().Add(signatureExpiration * time.Second).UnixMilli()
 	expirationBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(expirationBytes, uint64(expiration))
+	req.Header.Set(expirationHeader, strconv.FormatInt(expiration, 10))
 
 	// Create the hmac
 	h := hmac.New(sha256.New, c.authKey[:])
-	h.Write(append(bodyBytes, expirationBytes...))
-	signature := base64.RawStdEncoding.EncodeToString(h.Sum(nil))
+	hmacPayload := c.getHmacPayload(req.URL.Path, req.Header, bodyBytes)
+	h.Write(hmacPayload)
 
+	signature := base64.RawStdEncoding.EncodeToString(h.Sum(nil))
 	req.Header.Set(signatureHeader, signature)
-	req.Header.Set(expirationHeader, strconv.FormatInt(expiration, 10))
+}
+
+// getHmacPayload creates the payload for the hmac
+func (c *HttpClient) getHmacPayload(path string, headers http.Header, bodyBytes []byte) []byte {
+	// Add the path
+	payload := []byte(path)
+
+	// Add the headers; filtered only for renegade headers
+	var validKeys []string
+	for key := range headers {
+		lowerKey := strings.ToLower(key)
+		if !strings.HasPrefix(lowerKey, renegadeHeaderNamespace) || lowerKey == signatureHeader {
+			continue
+		}
+
+		validKeys = append(validKeys, key)
+	}
+
+	// Add headers in sorted order
+	sort.Strings(validKeys)
+	for _, key := range validKeys {
+		lowerKey := strings.ToLower(key)
+		for _, value := range headers[key] {
+			payload = append(payload, lowerKey...)
+			payload = append(payload, value...)
+		}
+	}
+
+	// Add the body
+	payload = append(payload, bodyBytes...)
+	return payload
 }
