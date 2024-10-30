@@ -158,8 +158,10 @@ func (c *RenegadeClient) createWallet(blocking bool) error {
 	apiWallet.KeyChain.PrivateKeys.SkRoot = nil
 
 	// Post the wallet to the relayer
+	blinderSeed := api_types.ScalarToUintLimbs(c.walletSecrets.BlinderSeed)
 	request := api_types.CreateWalletRequest{
-		Wallet: *apiWallet,
+		Wallet:      *apiWallet,
+		BlinderSeed: blinderSeed,
 	}
 	resp := api_types.CreateWalletResponse{}
 	err = c.httpClient.PostWithAuth(api_types.CreateWalletPath, request, &resp)

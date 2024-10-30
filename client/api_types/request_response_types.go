@@ -119,7 +119,8 @@ type RefreshWalletResponse struct {
 
 // CreateWalletRequest is the request body for the CreateWallet action
 type CreateWalletRequest struct {
-	Wallet ApiWallet `json:"wallet"`
+	Wallet      ApiWallet   `json:"wallet"`
+	BlinderSeed ScalarLimbs `json:"blinder_seed"`
 }
 
 // CreateWalletResponse is the response body for the CreateWallet action
