@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"crypto/ecdsa"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"math/big"
@@ -22,6 +23,26 @@ func (k *HmacKey) ToHexString() string {
 func (k *HmacKey) FromHexString(hexString string) (HmacKey, error) {
 	hexString = preprocessHexString(hexString)
 	bytes, err := hex.DecodeString(hexString)
+	if err != nil {
+		return HmacKey{}, err
+	}
+
+	if len(bytes) != 32 {
+		return HmacKey{}, errors.New("HMAC key must be 32 bytes")
+	}
+
+	copy(k[:], bytes)
+	return *k, nil
+}
+
+// ToBase64String converts the HMAC key to a base64 string
+func (k *HmacKey) ToBase64String() string {
+	return base64.StdEncoding.EncodeToString(k[:])
+}
+
+// FromBase64String converts a base64 string to an HMAC key
+func (k *HmacKey) FromBase64String(b64String string) (HmacKey, error) {
+	bytes, err := base64.StdEncoding.DecodeString(b64String)
 	if err != nil {
 		return HmacKey{}, err
 	}
