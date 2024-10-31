@@ -31,8 +31,8 @@ const (
 	TaskStatusPath = "/v0/tasks/%s"
 	// TaskHistoryPath is the path to fetch the task history for a wallet
 	TaskHistoryPath = "/v0/wallet/%s/task-history"
-	// GetAtomicMatchBundlePath is the path to fetch an atomic match bundle
-	GetAtomicMatchBundlePath = "/v0/matching-engine/request-external-match"
+	// GetExternalMatchBundlePath is the path to fetch an external match bundle
+	GetExternalMatchBundlePath = "/v0/matching-engine/request-external-match"
 )
 
 type ScalarLimbs [secretShareLimbCount]uint32
@@ -243,12 +243,12 @@ type TaskHistoryResponse struct {
 	Tasks []ApiHistoricalTask `json:"tasks"`
 }
 
-// ExternalMatchRequest is a request to generate an atomic match
+// ExternalMatchRequest is a request to generate an external match
 type ExternalMatchRequest struct {
 	ExternalOrder ApiExternalOrder `json:"external_order"`
 }
 
 // ExternalMatchResponse is the response body for the ExternalMatch action
 type ExternalMatchResponse struct {
-	Bundle AtomicMatchBundle `json:"match_bundle"`
+	Bundle ExternalMatchBundle `json:"match_bundle"`
 }
