@@ -196,3 +196,139 @@ amtHexString := amount.ToHexString() // type `string`
 Because our system encodes all its computation in zero-knowledge "circuits", the size of each wallet must be known ahead of time. To this end, we impose the restriction that each wallet has at most `MAX_BALANCES = 10` balances, and `MAX_ORDERS = 4` orders. 
 
 The SDK and the relayer will prevent you from allocating more balances and orders than are allowed.
+
+# External (Atomic) Matching
+We also allow for matches to be generated _externally_; meaning generated as a match between a Renegade user -- with state committed into the darkpool -- and an external user, with no state in the darkpool.
+
+To generate an external match, a client may request an `ExternalMatchBundle` from the relayer. This type contains:
+- The result of the match, including the amount and mint (erc20 address) of each token in the match. This can be a partial match; the external order may not be fully filled.
+- A transaction that the client can submit on-chain to settle the match.
+
+When the protocol receives such a transaction, it will update the internal party's state to reflect the match, and settle any obligations to the external party via ERC20 transfers.
+
+As such, the external party must approve the darkpool contract to spend the tokens it _sells_ to the internal party before the transaction can be successfully submitted.
+
+An example of how to use this functionality is below:
+```go
+package main
+
+import (
+	"context"
+	"crypto/ecdsa"
+	"fmt"
+	"math/big"
+	"os"
+
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/renegade-fi/golang-sdk/client/api_types"
+	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
+	"github.com/renegade-fi/golang-sdk/wallet"
+)
+
+const (
+	apiKey          = "..." // Issued by Renegade
+	apiSecret       = "..." // Issued by Renegade
+	quoteMint       = "0xdf8d259c04020562717557f2b5a3cf28e92707d1" // USDC on Arbitrum Sepolia
+	baseMint        = "0xcf8a4dbdc5c23a599bf045784b3740b1722c86dd" // wETH on Arbitrum Sepolia
+	rpcUrl          = "..." // replace with your RPC URL
+)
+
+func getEthClient() (*ethclient.Client, error) {
+	return ethclient.Dial(rpcUrl)
+}
+
+func getPrivateKey() (*ecdsa.PrivateKey, error) {
+	privKeyHex := os.Getenv("PRIVATE_KEY")
+	if privKeyHex == "" {
+		return nil, fmt.Errorf("PRIVATE_KEY environment variable not set")
+	}
+	return crypto.HexToECDSA(privKeyHex)
+}
+
+func main() {
+	// ... Token Approvals to the Darkpool Contract ... //
+
+	// Build a client
+	apiSecretKey, err := new(wallet.HmacKey).FromBase64String(apiSecret)
+	if err != nil {
+		panic(err)
+	}
+	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
+	if err != nil {
+		panic(err)
+	}
+
+	// Request an external match
+	amount := new(big.Int).SetUint64(1000000000000000000)
+	minFillSize := big.NewInt(0)
+	order := api_types.ApiExternalOrder{
+		QuoteMint:   quoteMint,
+		BaseMint:    baseMint,
+		Amount:      api_types.Amount(*amount),
+		Side:        "Sell",
+		MinFillSize: api_types.Amount(*minFillSize),
+	}
+	externalMatchBundle, err := externalMatchClient.GetExternalMatchBundle(&order)
+	if err != nil {
+		panic(err)
+	}
+
+	// Submit the bundle to the sequencer
+	if err := submitBundle(*externalMatchBundle); err != nil {
+		panic(err)
+	}
+}
+
+// submitBundle forwards an external match bundle to the sequencer
+func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
+	// Initialize eth client
+	ethClient, err := getEthClient()
+	if err != nil {
+		panic(err)
+	}
+
+	privateKey, err := getPrivateKey()
+	if err != nil {
+		panic(err)
+	}
+
+	// Send the transaction to the sequencer
+	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	nonce, err := ethClient.PendingNonceAt(context.Background(), crypto.PubkeyToAddress(privateKey.PublicKey))
+	if err != nil {
+		panic(err)
+	}
+
+	ethTx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   big.NewInt(421614), // Sepolia chain ID
+		Nonce:     nonce,
+		GasTipCap: gasPrice,
+		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)),
+		Gas:       uint64(10000000),
+		To:        &bundle.SettlementTx.To,
+		Value:     big.NewInt(0),
+		Data:      []byte(bundle.SettlementTx.Data),
+	})
+
+	// Sign and send transaction
+	signer := types.LatestSignerForChainID(big.NewInt(421614 /* arbitrum sepolia */))
+	signedTx, err := types.SignTx(ethTx, signer, privateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	err = ethClient.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Transaction submitted! Hash: %s\n", signedTx.Hash().Hex())
+	return nil
+}
+```

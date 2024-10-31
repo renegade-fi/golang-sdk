@@ -86,9 +86,8 @@ func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExter
 	}
 
 	// Convert into the application level type
-	res := &ExternalMatchBundle{
+	return &ExternalMatchBundle{
 		MatchResult:  &response.Bundle.MatchResult,
 		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
-	}
-	return res, nil
+	}, nil
 }
