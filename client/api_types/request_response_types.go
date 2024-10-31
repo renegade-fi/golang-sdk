@@ -250,5 +250,5 @@ type ExternalMatchRequest struct {
 
 // ExternalMatchResponse is the response body for the ExternalMatch action
 type ExternalMatchResponse struct {
-	Bundle ExternalMatchBundle `json:"match_bundle"`
+	Bundle ApiExternalMatchBundle `json:"match_bundle"`
 }

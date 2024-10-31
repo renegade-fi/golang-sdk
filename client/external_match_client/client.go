@@ -3,6 +3,7 @@ package external_match_client
 import (
 	"net/http"
 
+	geth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/renegade-fi/golang-sdk/client"
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	"github.com/renegade-fi/golang-sdk/wallet"
@@ -13,6 +14,32 @@ const (
 	mainnetBaseUrl = "https://mainnet.auth-server.renegade.fi:3000"
 	apiKeyHeader   = "X-Renegade-Api-Key"
 )
+
+// ExternalMatchBundle is the application level analog to the ApiExternalMatchBundle
+type ExternalMatchBundle struct {
+	MatchResult  *api_types.ApiExternalMatchResult
+	SettlementTx *SettlementTransaction
+}
+
+// SettlementTransaction is the application level analog to the ApiSettlementTransaction
+type SettlementTransaction struct {
+	Type string
+	To   geth_common.Address
+	Data []byte
+}
+
+// toSettlementTransaction converts an ApiSettlementTransaction to a SettlementTransaction
+func toSettlementTransaction(tx *api_types.ApiSettlementTransaction) *SettlementTransaction {
+	// Parse a geth address and bytes data from hex strings
+	to := geth_common.HexToAddress(tx.To)
+	data := geth_common.FromHex(tx.Data)
+
+	return &SettlementTransaction{
+		Type: tx.Type,
+		To:   to,
+		Data: data,
+	}
+}
 
 // ExternalMatchClient represents a client for the external match API
 //
@@ -42,7 +69,7 @@ func NewExternalMatchClient(baseURL string, apiKey string, apiSecret *wallet.Hma
 }
 
 // GetExternalMatchBundle requests an external match bundle from the relayer
-func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExternalOrder) (*api_types.ExternalMatchBundle, error) {
+func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExternalOrder) (*ExternalMatchBundle, error) {
 	// Construct a request
 	requestBody := api_types.ExternalMatchRequest{
 		ExternalOrder: *request,
@@ -58,5 +85,10 @@ func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExter
 		return nil, err
 	}
 
-	return &response.Bundle, nil
+	// Convert into the application level type
+	res := &ExternalMatchBundle{
+		MatchResult:  &response.Bundle.MatchResult,
+		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
+	}
+	return res, nil
 }

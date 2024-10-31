@@ -18,10 +18,10 @@ type ApiExternalOrder struct {
 	MinFillSize Amount `json:"min_fill_size"`
 }
 
-// ExternalMatchBundle contains a match and a transaction that the client can submit on-chain
-type ExternalMatchBundle struct {
-	MatchResult  ApiExternalMatchResult `json:"match_result"`
-	SettlementTx SettlementTransaction  `json:"settlement_tx"`
+// ApiExternalMatchBundle contains a match and a transaction that the client can submit on-chain
+type ApiExternalMatchBundle struct {
+	MatchResult  ApiExternalMatchResult   `json:"match_result"`
+	SettlementTx ApiSettlementTransaction `json:"settlement_tx"`
 }
 
 // ApiExternalMatchResult is the result of a request to generate an external match
@@ -33,8 +33,8 @@ type ApiExternalMatchResult struct {
 	Direction   string `json:"direction"`
 }
 
-// SettlementTransaction is an EVM transaction parameterization for settling an external match
-type SettlementTransaction struct {
+// ApiSettlementTransaction is an EVM transaction parameterization for settling an external match
+type ApiSettlementTransaction struct {
 	Type string `json:"type"`
 	To   string `json:"to"`
 	Data string `json:"data"`
