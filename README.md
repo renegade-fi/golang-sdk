@@ -332,3 +332,31 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 	return nil
 }
 ```
+
+### Supported Tokens
+Renegade supports a specific set of tokens for external matches. These can be found at:
+- [Testnet (Arbitrum Sepolia)](https://github.com/renegade-fi/token-mappings/blob/main/testnet.json)
+- [Mainnet (Arbitrum One)](https://github.com/renegade-fi/token-mappings/blob/main/mainnet.json)
+
+In testnet, we use a set of mock ERC20s that match the mainnet tokens. For convenience while testing, you can use the Renegade faucet to fund your wallet with testnet tokens.
+This is most easily accessed through the API using the curl request below
+```curl
+curl --request POST \
+  --url https://testnet.trade.renegade.fi/api/faucet \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "tokens": [
+    {
+      "ticker": "WETH",
+      "amount": "1"
+    },
+    {
+      "ticker": "USDC",
+      "amount": "10000"
+    }
+  ],
+  "address": "<ADDRESS>"
+}'
+```
+
+Note that the `amount` fields here are decimal adjusted, e.g. 1 WETH here is 10^18 wei.
