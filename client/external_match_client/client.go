@@ -1,6 +1,8 @@
 package external_match_client
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	geth_common "github.com/ethereum/go-ethereum/common"
@@ -69,6 +71,7 @@ func NewExternalMatchClient(baseURL string, apiKey string, apiSecret *wallet.Hma
 }
 
 // GetExternalMatchBundle requests an external match bundle from the relayer
+// returns nil if no match is found
 func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExternalOrder) (*ExternalMatchBundle, error) {
 	// Construct a request
 	requestBody := api_types.ExternalMatchRequest{
@@ -80,9 +83,22 @@ func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExter
 	headers.Set(apiKeyHeader, c.apiKey)
 
 	// Send the request
-	response := api_types.ExternalMatchResponse{}
-	if err := c.httpClient.PostWithAuthAndHeaders(path, &headers, requestBody, &response); err != nil {
+	statusCode, respBody, err := c.httpClient.PostWithAuthRaw(path, &headers, requestBody)
+	if err != nil {
 		return nil, err
+	}
+
+	// Check the status code
+	if statusCode < 200 || statusCode >= 300 {
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", statusCode, string(respBody))
+	} else if statusCode == http.StatusNoContent {
+		return nil, nil
+	}
+
+	// Unmarshal the request
+	response := api_types.ExternalMatchResponse{}
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	// Convert into the application level type

@@ -275,6 +275,11 @@ func main() {
 		panic(err)
 	}
 
+	if externalMatchBundle == nil {
+		fmt.Println("No match found")
+		return
+	}
+
 	// Submit the bundle to the sequencer
 	if err := submitBundle(*externalMatchBundle); err != nil {
 		panic(err)

@@ -99,8 +99,19 @@ func (c *HttpClient) PostWithAuthAndHeaders(path string, headers *http.Header, b
 	return json.Unmarshal(respBody, response)
 }
 
+// PostWithAuthRaw performs an authenticated POST request and returns the raw response
+func (c *HttpClient) PostWithAuthRaw(path string, headers *http.Header, body interface{}) (int, []byte, error) {
+	return c.doRequestWithStatus(http.MethodPost, path, headers, body, true /* withAuth */)
+}
+
 // doRequest performs an HTTP request with optional authentication
 func (c *HttpClient) doRequest(method, path string, headers *http.Header, body interface{}, withAuth bool) ([]byte, error) {
+	_, respBody, err := c.doRequestWithStatus(method, path, headers, body, withAuth)
+	return respBody, err
+}
+
+// doRequestWithStatus performs an HTTP request with optional authentication and returns the raw response with the status code
+func (c *HttpClient) doRequestWithStatus(method, path string, headers *http.Header, body interface{}, withAuth bool) (int, []byte, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	// Marshal the body
@@ -109,14 +120,14 @@ func (c *HttpClient) doRequest(method, path string, headers *http.Header, body i
 	if body != nil {
 		bodyBytes, err = json.Marshal(body)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal request body: %w", err)
+			return 0, nil, fmt.Errorf("failed to marshal request body: %w", err)
 		}
 	}
 
 	// Create the request
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return 0, nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set headers
@@ -129,21 +140,23 @@ func (c *HttpClient) doRequest(method, path string, headers *http.Header, body i
 	// Send the request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
+		return 0, nil, fmt.Errorf("failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read and check the response
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return 0, nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(respBody))
+	// Check the status code
+	statusCode := resp.StatusCode
+	if statusCode < 200 || statusCode >= 300 {
+		return statusCode, respBody, fmt.Errorf("unexpected status code: %d, body: %s", statusCode, string(respBody))
 	}
 
-	return respBody, nil
+	return statusCode, respBody, nil
 }
 
 // addAuth adds authentication headers to the request
