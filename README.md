@@ -261,15 +261,16 @@ func main() {
 	}
 
 	// Request an external match
-	amount := new(big.Int).SetUint64(1000000000000000000)
+	amount := new(big.Int).SetUint64(1000000000000000000) // 1 wETH
 	minFillSize := big.NewInt(0)
-	order := api_types.ApiExternalOrder{
-		QuoteMint:   quoteMint,
-		BaseMint:    baseMint,
-		Amount:      api_types.Amount(*amount),
-		Side:        "Sell",
-		MinFillSize: api_types.Amount(*minFillSize),
-	}
+	order, _ := api_types.NewExternalOrderBuilder().
+		WithQuoteMint(quoteMint).
+		WithBaseMint(baseMint).
+		// Note that `WithQuoteAmount` can be used to specify the volume denominated in the quote token
+		WithBaseAmount(api_types.Amount(*amount)).
+		WithSide("Sell").
+		WithMinFillSize(api_types.Amount(*minFillSize)).
+		Build()
 	externalMatchBundle, err := externalMatchClient.GetExternalMatchBundle(&order)
 	if err != nil {
 		panic(err)
