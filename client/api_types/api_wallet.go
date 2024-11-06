@@ -16,6 +16,10 @@ const secretShareLimbCount = 8 // 256 bits
 
 type Amount big.Int
 
+func (a *Amount) IsZero() bool {
+	return (*big.Int)(a).Sign() == 0
+}
+
 func (a *Amount) String() string {
 	return (*big.Int)(a).String()
 }
