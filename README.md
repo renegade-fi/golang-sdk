@@ -231,7 +231,7 @@ const (
 	apiKey          = "..." // Issued by Renegade
 	apiSecret       = "..." // Issued by Renegade
 	quoteMint       = "0xdf8d259c04020562717557f2b5a3cf28e92707d1" // USDC on Arbitrum Sepolia
-	baseMint        = "0xcf8a4dbdc5c23a599bf045784b3740b1722c86dd" // wETH on Arbitrum Sepolia
+	baseMint        = "0xc3414a7ef14aaaa9c4522dfc00a4e66e74e9c25a" // wETH on Arbitrum Sepolia
 	rpcUrl          = "..." // replace with your RPC URL
 )
 
