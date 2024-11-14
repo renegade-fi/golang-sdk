@@ -318,7 +318,7 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)),
 		Gas:       uint64(10000000),
 		To:        &bundle.SettlementTx.To,
-		Value:     big.NewInt(0),
+		Value:     bundle.SettlementTx.Value,
 		Data:      []byte(bundle.SettlementTx.Data),
 	})
 
@@ -343,6 +343,8 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 Renegade supports a specific set of tokens for external matches. These can be found at:
 - [Testnet (Arbitrum Sepolia)](https://github.com/renegade-fi/token-mappings/blob/main/testnet.json)
 - [Mainnet (Arbitrum One)](https://github.com/renegade-fi/token-mappings/blob/main/mainnet.json)
+
+*Note:* For external matches, Renegade supports swapping native ETH directly. To do so, specify the `baseMint` as `0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE`.
 
 In testnet, we use a set of mock ERC20s that match the mainnet tokens. For convenience while testing, you can use the Renegade faucet to fund your wallet with testnet tokens.
 This is most easily accessed through the API using the curl request below
