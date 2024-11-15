@@ -3,6 +3,7 @@ package external_match_client
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 
 	geth_common "github.com/ethereum/go-ethereum/common"
@@ -25,9 +26,10 @@ type ExternalMatchBundle struct {
 
 // SettlementTransaction is the application level analog to the ApiSettlementTransaction
 type SettlementTransaction struct {
-	Type string
-	To   geth_common.Address
-	Data []byte
+	Type  string
+	To    geth_common.Address
+	Data  []byte
+	Value *big.Int
 }
 
 // toSettlementTransaction converts an ApiSettlementTransaction to a SettlementTransaction
@@ -35,11 +37,14 @@ func toSettlementTransaction(tx *api_types.ApiSettlementTransaction) *Settlement
 	// Parse a geth address and bytes data from hex strings
 	to := geth_common.HexToAddress(tx.To)
 	data := geth_common.FromHex(tx.Data)
+	valueBytes := geth_common.FromHex(tx.Value)
+	value := big.NewInt(0).SetBytes(valueBytes)
 
 	return &SettlementTransaction{
-		Type: tx.Type,
-		To:   to,
-		Data: data,
+		Type:  tx.Type,
+		To:    to,
+		Data:  data,
+		Value: value,
 	}
 }
 

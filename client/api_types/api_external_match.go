@@ -114,7 +114,8 @@ type ApiExternalMatchResult struct {
 
 // ApiSettlementTransaction is an EVM transaction parameterization for settling an external match
 type ApiSettlementTransaction struct {
-	Type string `json:"type"`
-	To   string `json:"to"`
-	Data string `json:"data"`
+	Type  string `json:"type"`
+	To    string `json:"to"`
+	Data  string `json:"data"`
+	Value string `json:"value"`
 }
