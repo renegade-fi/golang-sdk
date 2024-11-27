@@ -97,9 +97,37 @@ func (b *ApiExternalOrderBuilder) Build() (*ApiExternalOrder, error) {
 	return &b.order, nil
 }
 
+// ApiExternalAssetTransfer represents a single transfer between the external client and darkpool
+type ApiExternalAssetTransfer struct {
+	Mint   string `json:"mint"`
+	Amount Amount `json:"amount"`
+}
+
+// ApiExternalQuote is a quote from the relayer for an external order
+type ApiExternalQuote struct {
+	Order       ApiExternalOrder         `json:"order"`
+	MatchResult ApiExternalMatchResult   `json:"match_result"`
+	Fees        ApiFee                   `json:"fees"`
+	Send        ApiExternalAssetTransfer `json:"send"`
+	Receive     ApiExternalAssetTransfer `json:"receive"`
+	Price       TimestampedPrice         `json:"price"`
+	Timestamp   uint64                   `json:"timestamp"`
+}
+
+// ApiSignedQuote is a quote from the relayer, signed with the relayer's admin API key
+// This allows a client to submit an authorized quote to the relayer and receive back an
+// assembled settlement transaction at the quoted price
+type ApiSignedQuote struct {
+	Quote     ApiExternalQuote `json:"quote"`
+	Signature string           `json:"signature"`
+}
+
 // ApiExternalMatchBundle contains a match and a transaction that the client can submit on-chain
 type ApiExternalMatchBundle struct {
 	MatchResult  ApiExternalMatchResult   `json:"match_result"`
+	Fees         ApiFee                   `json:"fees"`
+	Receive      ApiExternalAssetTransfer `json:"receive"`
+	Send         ApiExternalAssetTransfer `json:"send"`
 	SettlementTx ApiSettlementTransaction `json:"settlement_tx"`
 }
 

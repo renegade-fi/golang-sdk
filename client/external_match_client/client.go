@@ -21,6 +21,9 @@ const (
 // ExternalMatchBundle is the application level analog to the ApiExternalMatchBundle
 type ExternalMatchBundle struct {
 	MatchResult  *api_types.ApiExternalMatchResult
+	Fees         *api_types.ApiFee
+	Receive      *api_types.ApiExternalAssetTransfer
+	Send         *api_types.ApiExternalAssetTransfer
 	SettlementTx *SettlementTransaction
 }
 
@@ -75,40 +78,111 @@ func NewExternalMatchClient(baseURL string, apiKey string, apiSecret *wallet.Hma
 	}
 }
 
+// GetExternalMatchQuote requests a quote from the relayer
+// returns nil if no match is found
+func (c *ExternalMatchClient) GetExternalMatchQuote(order *api_types.ApiExternalOrder) (*api_types.ApiSignedQuote, error) {
+	requestBody := api_types.ExternalQuoteRequest{
+		ExternalOrder: *order,
+	}
+
+	var response api_types.ExternalQuoteResponse
+	success, err := c.doExternalMatchRequest(
+		api_types.GetExternalMatchQuotePath,
+		requestBody,
+		&response,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !success {
+		return nil, nil
+	}
+
+	return &response.Quote, nil
+}
+
+// AssembleExternalQuote generates an external match bundle from a signed quote
+func (c *ExternalMatchClient) AssembleExternalQuote(quote *api_types.ApiSignedQuote) (*ExternalMatchBundle, error) {
+	requestBody := api_types.AssembleExternalQuoteRequest{
+		Quote:           *quote,
+		DoGasEstimation: false,
+	}
+
+	var response api_types.ExternalMatchResponse
+	success, err := c.doExternalMatchRequest(
+		api_types.AssembleExternalQuotePath,
+		requestBody,
+		&response,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !success {
+		return nil, nil
+	}
+
+	return &ExternalMatchBundle{
+		MatchResult:  &response.Bundle.MatchResult,
+		Fees:         &response.Bundle.Fees,
+		Receive:      &response.Bundle.Receive,
+		Send:         &response.Bundle.Send,
+		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
+	}, nil
+}
+
 // GetExternalMatchBundle requests an external match bundle from the relayer
 // returns nil if no match is found
 func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExternalOrder) (*ExternalMatchBundle, error) {
-	// Construct a request
 	requestBody := api_types.ExternalMatchRequest{
 		ExternalOrder: *request,
 	}
 
-	path := api_types.GetExternalMatchBundlePath
-	headers := make(http.Header)
-	headers.Set(apiKeyHeader, c.apiKey)
-
-	// Send the request
-	statusCode, respBody, err := c.httpClient.PostWithAuthRaw(path, &headers, requestBody)
+	var response api_types.ExternalMatchResponse
+	success, err := c.doExternalMatchRequest(
+		api_types.GetExternalMatchBundlePath,
+		requestBody,
+		&response,
+	)
 	if err != nil {
 		return nil, err
 	}
-
-	// Check the status code
-	if statusCode < 200 || statusCode >= 300 {
-		return nil, fmt.Errorf("unexpected status code: %d, body: %s", statusCode, string(respBody))
-	} else if statusCode == http.StatusNoContent {
+	if !success {
 		return nil, nil
 	}
 
-	// Unmarshal the request
-	response := api_types.ExternalMatchResponse{}
-	if err := json.Unmarshal(respBody, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	// Convert into the application level type
 	return &ExternalMatchBundle{
 		MatchResult:  &response.Bundle.MatchResult,
 		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
 	}, nil
+}
+
+// doExternalMatchRequest handles an external match request
+// returns false if the response was NO_CONTENT or if unmarshaling failed
+func (c *ExternalMatchClient) doExternalMatchRequest(
+	path string,
+	request interface{},
+	response interface{},
+) (bool, error) {
+	headers := make(http.Header)
+	headers.Set(apiKeyHeader, c.apiKey)
+
+	// Send the request
+	statusCode, respBody, err := c.httpClient.PostWithAuthRaw(path, &headers, request)
+	if err != nil {
+		return false, err
+	}
+
+	// Check the status code
+	if statusCode < 200 || statusCode >= 300 {
+		return false, fmt.Errorf("unexpected status code: %d, body: %s", statusCode, string(respBody))
+	} else if statusCode == http.StatusNoContent {
+		return false, nil
+	}
+
+	// Unmarshal the response
+	if err := json.Unmarshal(respBody, response); err != nil {
+		return false, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return true, nil
 }

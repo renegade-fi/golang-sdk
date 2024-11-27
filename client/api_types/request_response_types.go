@@ -33,6 +33,10 @@ const (
 	TaskHistoryPath = "/v0/wallet/%s/task-history"
 	// GetExternalMatchBundlePath is the path to fetch an external match bundle
 	GetExternalMatchBundlePath = "/v0/matching-engine/request-external-match"
+	// GetExternalMatchQuotePath is the path to fetch an external match quote
+	GetExternalMatchQuotePath = "/v0/matching-engine/quote"
+	// AssembleExternalQuotePath is the path to assemble a quote into a settlement transaction
+	AssembleExternalQuotePath = "/v0/matching-engine/assemble-external-match"
 )
 
 type ScalarLimbs [secretShareLimbCount]uint32
@@ -251,4 +255,20 @@ type ExternalMatchRequest struct {
 // ExternalMatchResponse is the response body for the ExternalMatch action
 type ExternalMatchResponse struct {
 	Bundle ApiExternalMatchBundle `json:"match_bundle"`
+}
+
+// ExternalQuoteRequest is a request to fetch an external match quote
+type ExternalQuoteRequest struct {
+	ExternalOrder ApiExternalOrder `json:"external_order"`
+}
+
+// ExternalQuoteResponse is the response body for the ExternalQuote action
+type ExternalQuoteResponse struct {
+	Quote ApiSignedQuote `json:"signed_quote"`
+}
+
+// AssembleExternalQuoteRequest is a request to assemble an external match quote into a settlement transaction
+type AssembleExternalQuoteRequest struct {
+	Quote           ApiSignedQuote `json:"signed_quote"`
+	DoGasEstimation bool           `json:"do_gas_estimation"`
 }

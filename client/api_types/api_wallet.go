@@ -43,6 +43,13 @@ func (a *Amount) UnmarshalJSON(b []byte) error {
 	return a.SetString(s, 10)
 }
 
+// TimestampedPrice is a price at a given timestamp
+// The price is represented as a string to avoid precision loss
+type TimestampedPrice struct {
+	Timestamp uint64 `json:"timestamp"`
+	Price     string `json:"price"`
+}
+
 // orderSideFromScalar converts a wallet.Scalar to an order side
 func orderSideFromScalar(s wallet.Scalar) (string, error) {
 	if s.IsZero() {
@@ -162,6 +169,13 @@ func (a *ApiBalance) ToBalance(b *wallet.Balance) error {
 	b.ProtocolFeeBalance = new(wallet.Scalar).FromBigInt(&protocolFeeBigint)
 
 	return nil
+}
+
+// ApiFee is a fee in the Renegade system, due on a match, balance, etc
+// Contains both a relayer fee and a protocol fee
+type ApiFee struct {
+	RelayerFee  Amount `json:"relayer_fee"`
+	ProtocolFee Amount `json:"protocol_fee"`
 }
 
 // ApiPublicKeychain is a public keychain in the Renegade system
