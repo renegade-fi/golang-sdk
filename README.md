@@ -197,6 +197,8 @@ Because our system encodes all its computation in zero-knowledge "circuits", the
 
 The SDK and the relayer will prevent you from allocating more balances and orders than are allowed.
 
+---
+
 # External (Atomic) Matching
 We also allow for matches to be generated _externally_; meaning generated as a match between a Renegade user -- with state committed into the darkpool -- and an external user, with no state in the darkpool.
 
@@ -208,7 +210,163 @@ When the protocol receives such a transaction, it will update the internal party
 
 As such, the external party must approve the darkpool contract to spend the tokens it _sells_ to the internal party before the transaction can be successfully submitted.
 
-An example of how to use this functionality is below:
+There are two ways to generate an external match:
+
+## Method 1: Quote + Assemble
+This method is the recommended method as it has more permissive rate limits.
+The code breaks down into two steps:
+1. Fetch a quote for the order
+2. If the quote is acceptable, assemble the transaction to submit on-chain
+
+### Example
+A full example can be found in [`examples/external_match.go`](examples/external_match.go).
+
+<details>
+<summary>Example Code</summary>
+
+```go
+// ... See `examples/external_match.go` for the prelude ... //
+
+func main() {
+	// ... Token Approvals to Darkpool ... //
+
+	// Get API credentials from environment
+	apiKey := os.Getenv("EXTERNAL_MATCH_KEY")
+	apiSecret := os.Getenv("EXTERNAL_MATCH_SECRET")
+	if apiKey == "" || apiSecret == "" {
+		panic("EXTERNAL_MATCH_KEY and EXTERNAL_MATCH_SECRET must be set")
+	}
+
+	apiSecretKey, err := new(wallet.HmacKey).FromBase64String(apiSecret)
+	if err != nil {
+		panic(err)
+	}
+
+	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
+
+	// Request an external match
+	// We can denominate the order size in either the quote or base token with
+	// `WithQuoteAmount` or `WithBaseAmount` respectively.
+	quoteAmount := new(big.Int).SetUint64(20_000_000) // $20 USDC
+	minFillSize := big.NewInt(0)
+	order, err := api_types.NewExternalOrderBuilder().
+		WithQuoteMint(quoteMint).
+		WithBaseMint(baseMint).
+		WithQuoteAmount(api_types.Amount(*quoteAmount)).
+		WithSide("Buy").
+		WithMinFillSize(api_types.Amount(*minFillSize)).
+		Build()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := getQuoteAndSubmit(order, externalMatchClient); err != nil {
+		panic(err)
+	}
+}
+
+// getQuoteAndSubmit gets a quote, assembled is, then submits the bundle
+func getQuoteAndSubmit(order *api_types.ApiExternalOrder, client *external_match_client.ExternalMatchClient) error {
+	// 1. Get a quote from the relayer
+	fmt.Println("Getting quote...")
+	quote, err := client.GetExternalMatchQuote(order)
+	if err != nil {
+		return err
+	}
+
+	if quote == nil {
+		fmt.Println("No quote found")
+		return nil
+	}
+
+	// ... Check if the quote is acceptable ... //
+
+	// 2. Assemble the bundle
+	fmt.Println("Assembling bundle...")
+	bundle, err := client.AssembleExternalQuote(quote)
+	if err != nil {
+		return err
+	}
+
+	if bundle == nil {
+		fmt.Println("No bundle found")
+		return nil
+	}
+
+	// 3. Submit the bundle
+	fmt.Println("Submitting bundle...")
+	if err := submitBundle(*bundle); err != nil {
+		return err
+	}
+
+	fmt.Println("Bundle submitted successfully!\n")
+	return nil
+}
+
+// submitBundle submits the bundle to the sequencer
+func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
+	// Initialize eth client
+	ethClient, err := getEthClient()
+	if err != nil {
+		panic(err)
+	}
+
+	privateKey, err := getPrivateKey()
+	if err != nil {
+		panic(err)
+	}
+
+	// Send the transaction to the sequencer
+	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	nonce, err := ethClient.PendingNonceAt(context.Background(), crypto.PubkeyToAddress(privateKey.PublicKey))
+	if err != nil {
+		panic(err)
+	}
+
+	ethTx := types.NewTx(&types.DynamicFeeTx{
+		ChainID:   big.NewInt(chainId), // Sepolia chain ID
+		Nonce:     nonce,
+		GasTipCap: gasPrice,                                  // Use suggested gas price as tip cap
+		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)), // Fee cap at 2x gas price
+		Gas:       uint64(10_000_000),                        // Gas limit
+		To:        &bundle.SettlementTx.To,                   // Contract address
+		Value:     bundle.SettlementTx.Value,                 // No ETH transfer
+		Data:      []byte(bundle.SettlementTx.Data),          // Contract call data
+	})
+
+	// Sign and send transaction
+	signer := types.LatestSignerForChainID(big.NewInt(chainId))
+	signedTx, err := types.SignTx(ethTx, signer, privateKey)
+	if err != nil {
+		panic(err)
+	}
+
+	err = ethClient.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Transaction submitted! Hash: %s\n", signedTx.Hash().Hex())
+	return nil
+}
+```
+
+</details>
+
+## Method 2: Direct Match
+**Note:** It is recommended to use Method 1; this method is subject to strict rate limits.
+
+Using this method, clients may directly request a match bundle from the relayer, without first requesting a quote.
+
+### Example
+
+<details>
+<summary>Example Code</summary>
+
 ```go
 package main
 
@@ -338,8 +496,9 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 	return nil
 }
 ```
+</details>
 
-### Supported Tokens
+## Supported Tokens
 Renegade supports a specific set of tokens for external matches. These can be found at:
 - [Testnet (Arbitrum Sepolia)](https://github.com/renegade-fi/token-mappings/blob/main/testnet.json)
 - [Mainnet (Arbitrum One)](https://github.com/renegade-fi/token-mappings/blob/main/mainnet.json)
