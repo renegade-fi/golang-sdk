@@ -219,13 +219,13 @@ The code breaks down into two steps:
 2. If the quote is acceptable, assemble the transaction to submit on-chain
 
 ### Example
-A full example can be found in [`examples/external_match.go`](examples/external_match.go).
+A full example can be found in [`examples/01_external_match/main.go`](examples/01_external_match/main.go).
 
 <details>
 <summary>Example Code</summary>
 
 ```go
-// ... See `examples/external_match.go` for the prelude ... //
+// ... See `examples/01_external_match/main.go` for the prelude ... //
 
 func main() {
 	// ... Token Approvals to Darkpool ... //
@@ -497,6 +497,33 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 }
 ```
 </details>
+
+## Bundle Structure
+The *quote* returned by the relayer for an external match has the following structure:
+- `Order`: The original external order
+- `MatchResult`: The result of the match, including:
+- `Fees`: The fees for the match
+    - `RelayerFee`: The fee paid to the relayer
+    - `ProtocolFee`: The fee paid to the protocol
+- `Receive`: The asset transfer the external party will receive, *after fees are deducted*.
+    - `Mint`: The token address
+    - `Amount`: The amount to receive
+- `Send`: The asset transfer the external party needs to send. No fees are charged on the send transfer.  (same fields as `Receive`) 
+- `Price`: The price used for the match
+- `Timestamp`: The timestamp of the quote
+
+When assembled into a bundle (returned from `AssembleExternalQuote` or `GetExternalMatchBundle`), the structure is as follows:
+- `MatchResult`: The final match result
+- `Fees`: The fees to be paid
+- `Receive`: The asset transfer the external party will receive
+- `Send`: The asset transfer the external party needs to send
+- `SettlementTx`: The transaction to submit on-chain
+    - `Type`: The transaction type
+    - `To`: The contract address
+    - `Data`: The calldata
+    - `Value`: The ETH value to send
+
+See example [`02_external_quote_validation`](examples/02_external_quote_validation/main.go) for an example of using these fields to validate a quote before submitting it.
 
 ## Supported Tokens
 Renegade supports a specific set of tokens for external matches. These can be found at:

@@ -16,6 +16,10 @@ const secretShareLimbCount = 8 // 256 bits
 
 type Amount big.Int
 
+func NewAmount(i int64) Amount {
+	return Amount(*big.NewInt(i))
+}
+
 func (a *Amount) IsZero() bool {
 	return (*big.Int)(a).Sign() == 0
 }
@@ -41,6 +45,30 @@ func (a *Amount) SetString(s string, base int) error {
 func (a *Amount) UnmarshalJSON(b []byte) error {
 	s := string(b)
 	return a.SetString(s, 10)
+}
+
+func (a Amount) Add(b Amount) Amount {
+	sum := new(big.Int).Add((*big.Int)(&a), (*big.Int)(&b))
+	return Amount(*sum)
+}
+
+func (a Amount) Sub(b Amount) Amount {
+	diff := new(big.Int).Sub((*big.Int)(&a), (*big.Int)(&b))
+	return Amount(*diff)
+}
+
+func (a Amount) Mul(b Amount) Amount {
+	prod := new(big.Int).Mul((*big.Int)(&a), (*big.Int)(&b))
+	return Amount(*prod)
+}
+
+func (a Amount) Div(b Amount) Amount {
+	quot := new(big.Int).Div((*big.Int)(&a), (*big.Int)(&b))
+	return Amount(*quot)
+}
+
+func (a Amount) Cmp(b Amount) int {
+	return (*big.Int)(&a).Cmp((*big.Int)(&b))
 }
 
 // TimestampedPrice is a price at a given timestamp
@@ -176,6 +204,10 @@ func (a *ApiBalance) ToBalance(b *wallet.Balance) error {
 type ApiFee struct {
 	RelayerFee  Amount `json:"relayer_fee"`
 	ProtocolFee Amount `json:"protocol_fee"`
+}
+
+func (f *ApiFee) Total() Amount {
+	return f.RelayerFee.Add(f.ProtocolFee)
 }
 
 // ApiPublicKeychain is a public keychain in the Renegade system
