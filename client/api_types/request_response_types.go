@@ -7,6 +7,10 @@ import (
 )
 
 const (
+	// --- Orderbook Endpoints --- //
+	GetSupportedTokensPath = "/v0/supported-tokens"
+
+	// --- Wallet Endpoints --- //
 	// GetWalletPath is the path for the GetWallet action
 	GetWalletPath = "/v0/wallet/%s"
 	// BackOfQueueWalletPath is the path to fetch the wallet after all tasks
@@ -32,6 +36,8 @@ const (
 	TaskStatusPath = "/v0/tasks/%s"
 	// TaskHistoryPath is the path to fetch the task history for a wallet
 	TaskHistoryPath = "/v0/wallet/%s/task-history"
+
+	// --- External Match Endpoints --- //
 	// GetExternalMatchBundlePath is the path to fetch an external match bundle
 	GetExternalMatchBundlePath = "/v0/matching-engine/request-external-match"
 	// GetExternalMatchQuotePath is the path to fetch an external match quote
@@ -100,6 +106,19 @@ func BuildTaskStatusPath(taskId uuid.UUID) string {
 func BuildTaskHistoryPath(walletId uuid.UUID) string {
 	return fmt.Sprintf(TaskHistoryPath, walletId)
 }
+
+// -----------------------
+// | Orderbook Endpoints |
+// -----------------------
+
+// GetSupportedTokensResponse is the response body for the GetSupportedTokens request
+type GetSupportedTokensResponse struct {
+	Tokens []ApiToken `json:"tokens"`
+}
+
+// --------------------
+// | Wallet Endpoints |
+// --------------------
 
 // GetWalletResponse is the response body for a GetWallet request
 type GetWalletResponse struct {
@@ -249,6 +268,10 @@ type TaskHistoryResponse struct {
 	// Tasks is the list of tasks in the queue
 	Tasks []ApiHistoricalTask `json:"tasks"`
 }
+
+// ----------------------------
+// | External Match Endpoints |
+// ----------------------------
 
 // ExternalMatchRequest is a request to generate an external match
 type ExternalMatchRequest struct {

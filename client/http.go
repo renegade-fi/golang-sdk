@@ -162,7 +162,9 @@ func (c *HttpClient) doRequestWithStatus(
 	}
 
 	// Set headers
-	req.Header = *headers
+	if headers != nil {
+		req.Header = *headers
+	}
 	req.Header.Set(contentTypeHeader, contentTypeJSON)
 	if withAuth {
 		c.addAuth(req, bodyBytes)

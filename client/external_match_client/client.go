@@ -13,9 +13,11 @@ import (
 )
 
 const (
-	testnetBaseUrl = "https://testnet.auth-server.renegade.fi:3000"
-	mainnetBaseUrl = "https://mainnet.auth-server.renegade.fi:3000"
-	apiKeyHeader   = "X-Renegade-Api-Key"
+	testnetBaseUrl        = "https://testnet.auth-server.renegade.fi:3000"
+	testnetRelayerBaseUrl = "https://testnet.cluster0.renegade.fi:3000"
+	mainnetBaseUrl        = "https://mainnet.auth-server.renegade.fi:3000"
+	mainnetRelayerBaseUrl = "https://mainnet.cluster0.renegade.fi:3000"
+	apiKeyHeader          = "X-Renegade-Api-Key"
 )
 
 // ExternalMatchBundle is the application level analog to the ApiExternalMatchBundle
@@ -56,31 +58,49 @@ func toSettlementTransaction(tx *api_types.ApiSettlementTransaction) *Settlement
 // This client can be used to request external match bundles from a relayer.
 // The relayer will return a match and a transaction to submit on-chain
 type ExternalMatchClient struct {
-	apiKey     string
-	httpClient *client.HttpClient
+	apiKey            string
+	httpClient        *client.HttpClient
+	relayerHttpClient *client.HttpClient
 }
 
 // NewTestnetExternalMatchClient creates a new ExternalMatchClient for the testnet
 func NewTestnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
-	return NewExternalMatchClient(testnetBaseUrl, apiKey, apiSecret)
+	return NewExternalMatchClient(testnetBaseUrl, testnetRelayerBaseUrl, apiKey, apiSecret)
 }
 
 // NewMainnetExternalMatchClient creates a new ExternalMatchClient for the mainnet
 func NewMainnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
-	return NewExternalMatchClient(mainnetBaseUrl, apiKey, apiSecret)
+	return NewExternalMatchClient(mainnetBaseUrl, mainnetRelayerBaseUrl, apiKey, apiSecret)
 }
 
 // NewExternalMatchClient creates a new ExternalMatchClient with the given base
 // URL, api key, and api secret
 func NewExternalMatchClient(
 	baseURL string,
+	relayerBaseURL string,
 	apiKey string,
 	apiSecret *wallet.HmacKey,
 ) *ExternalMatchClient {
 	return &ExternalMatchClient{
-		apiKey:     apiKey,
-		httpClient: client.NewHttpClient(baseURL, apiSecret),
+		apiKey:            apiKey,
+		httpClient:        client.NewHttpClient(baseURL, apiSecret),
+		relayerHttpClient: client.NewHttpClient(relayerBaseURL, apiSecret),
 	}
+}
+
+// GetSupportedTokens requests the list of supported tokens from the relayer
+func (c *ExternalMatchClient) GetSupportedTokens() ([]api_types.ApiToken, error) {
+	var response api_types.GetSupportedTokensResponse
+	err := c.relayerHttpClient.GetJSON(
+		api_types.GetSupportedTokensPath,
+		nil, // body
+		&response,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Tokens, nil
 }
 
 // GetExternalMatchQuote requests a quote from the relayer

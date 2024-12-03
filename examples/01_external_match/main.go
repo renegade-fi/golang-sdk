@@ -16,8 +16,6 @@ import (
 )
 
 const (
-	quoteMint       = "0xdf8d259c04020562717557f2b5a3cf28e92707d1" // USDC
-	baseMint        = "0xc3414a7ef14aaaa9c4522dfc00a4e66e74e9c25a" // WETH
 	darkpoolAddress = "0x9af58f1ff20ab22e819e40b57ffd784d115a9ef5"
 	chainId         = 421614 // Testnet
 )
@@ -38,6 +36,16 @@ func main() {
 	}
 
 	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
+
+	// You can fetch token mappings from the relayer using the client
+	quoteMint, err := findTokenAddr("USDC", externalMatchClient)
+	if err != nil {
+		panic(err)
+	}
+	baseMint, err := findTokenAddr("WETH", externalMatchClient)
+	if err != nil {
+		panic(err)
+	}
 
 	// Request an external match
 	// We can denominate the order size in either the quote or base token with
@@ -172,4 +180,22 @@ func getPrivateKey() (*ecdsa.PrivateKey, error) {
 	}
 
 	return crypto.HexToECDSA(privKeyHex)
+}
+
+// findTokenAddr fetches the address of a token from the relayer
+func findTokenAddr(symbol string, client *external_match_client.ExternalMatchClient) (string, error) {
+	// Fetch the list of supported tokens from the relayer
+	tokens, err := client.GetSupportedTokens()
+	if err != nil {
+		return "", err
+	}
+
+	// Find the token with the matching symbol
+	for _, token := range tokens {
+		if token.Symbol == symbol {
+			return token.Address, nil
+		}
+	}
+
+	return "", fmt.Errorf("token not found")
 }
