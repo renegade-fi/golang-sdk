@@ -9,7 +9,8 @@ import (
 
 // --- Interface and Implementation --- //
 
-// ScalarSerialize is an interface that can be implemented by any type that can be serialized to a slice of Scalars
+// ScalarSerialize is an interface that can be implemented by any type that
+// can be serialized to a slice of Scalars
 type ScalarSerialize interface {
 	// FromScalars deserializes a value from a slice of Scalars
 	FromScalars(scalars *ScalarIterator) error
@@ -60,7 +61,8 @@ func (s *Uint64) NumScalars() int {
 
 // --- Serialization --- //
 
-// ToScalarsRecursive is a helper function to serialize a value to a slice of scalars using reflection
+// ToScalarsRecursive is a helper function to serialize a value to a
+// slice of scalars using reflection
 func ToScalarsRecursive(s interface{}) ([]Scalar, error) {
 	v := reflect.ValueOf(s)
 	if v.Kind() != reflect.Ptr {
@@ -155,7 +157,8 @@ func (s *ScalarIterator) NumRemaining() int {
 	return len(s.scalars) - s.index
 }
 
-// FromScalarsReflection is a helper function to deserialize a struct from a slice of scalars using reflection
+// FromScalarsReflection is a helper function to deserialize a struct from a
+// slice of scalars using reflection
 func FromScalarsRecursive(s interface{}, scalars *ScalarIterator) error {
 	// If the type implements ScalarSerialize, use the specialized method
 	if ss, ok := s.(ScalarSerialize); ok {
@@ -184,7 +187,8 @@ func FromScalarsRecursive(s interface{}, scalars *ScalarIterator) error {
 	}
 }
 
-// fromScalarsStruct is a helper function to deserialize a struct from a slice of scalars using reflection
+// fromScalarsStruct is a helper function to deserialize a struct from a
+// slice of scalars using reflection
 func fromScalarsStruct(v reflect.Value, scalars *ScalarIterator) error {
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
@@ -204,7 +208,8 @@ func fromScalarsStruct(v reflect.Value, scalars *ScalarIterator) error {
 	return nil
 }
 
-// fromScalarsArray is a helper function to deserialize an array from a slice of scalars using reflection
+// fromScalarsArray is a helper function to deserialize an array from a
+// slice of scalars using reflection
 func fromScalarsArray(v reflect.Value, scalars *ScalarIterator) error {
 	for i := 0; i < v.Len(); i++ {
 		if err := FromScalarsRecursive(v.Index(i).Addr().Interface(), scalars); err != nil {

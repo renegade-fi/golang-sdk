@@ -9,7 +9,8 @@ import (
 const (
 	// GetWalletPath is the path for the GetWallet action
 	GetWalletPath = "/v0/wallet/%s"
-	// BackOfQueueWalletPath is the path to fetch the wallet after all tasks in its queue have been processed
+	// BackOfQueueWalletPath is the path to fetch the wallet after all tasks
+	// in its queue have been processed
 	BackOfQueueWalletPath = "/v0/wallet/%s/back-of-queue"
 	// LookupWalletPath is the path for the LookupWallet action
 	LookupWalletPath = "/v0/wallet/lookup"
@@ -43,7 +44,8 @@ type ScalarLimbs [secretShareLimbCount]uint32
 
 // WalletUpdateAuthorization encapsulates the client generated authorization for wallet updates
 type WalletUpdateAuthorization struct {
-	// StatementSig is the signature of the commitment to the new wallet under the client's current root key
+	// StatementSig is the signature of the commitment to the new wallet under
+	// the client's current root key
 	StatementSig *string `json:"statement_sig"`
 	// NewRootKey is the root key for the new wallet, if the client prefers to rotate the root key
 	NewRootKey *string `json:"new_root_key"`
@@ -194,7 +196,8 @@ type WithdrawRequest struct {
 	DestinationAddr string `json:"destination_addr"`
 	// Amount is the amount of the token to withdraw
 	Amount string `json:"amount"`
-	// ExternalTransferSig is a signature of the external transfer to authorize the withdrawal and location
+	// ExternalTransferSig is a signature of the external transfer to authorize
+	// the withdrawal and location
 	ExternalTransferSig *string `json:"external_transfer_sig"`
 	// WalletUpdateAuthorization is the authorization for the wallet update
 	WalletUpdateAuthorization
@@ -267,7 +270,8 @@ type ExternalQuoteResponse struct {
 	Quote ApiSignedQuote `json:"signed_quote"`
 }
 
-// AssembleExternalQuoteRequest is a request to assemble an external match quote into a settlement transaction
+// AssembleExternalQuoteRequest is a request to assemble an external match quote
+// into a settlement transaction
 type AssembleExternalQuoteRequest struct {
 	Quote           ApiSignedQuote `json:"signed_quote"`
 	DoGasEstimation bool           `json:"do_gas_estimation"`

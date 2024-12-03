@@ -70,8 +70,8 @@ var FULL_ROUND_CONSTANTS = [R_F][WIDTH]fr.Element{
 	},
 }
 
-// PARTIAL_ROUND_CONSTANTS are the round constants used in the partial rounds of the Poseidon permutation
-// In Montgomery form
+// PARTIAL_ROUND_CONSTANTS are the round constants used in the partial rounds
+// of the Poseidon permutation in Montgomery form
 var PARTIAL_ROUND_CONSTANTS = [R_P]fr.Element{
 	{7073706554792388047, 15115725580624899978, 3679228461395092567, 1155120523926954320},
 	{9209151483111776538, 17577545623568481397, 13585757825660930829, 3472890281115441576},

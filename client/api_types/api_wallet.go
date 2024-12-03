@@ -257,7 +257,10 @@ type ApiPrivateKeychain struct {
 }
 
 // FromPrivateKeychain converts a wallet.PrivateKeychain to an ApiPrivateKeychain
-func (a *ApiPrivateKeychain) FromPrivateKeychain(pk *wallet.PrivateKeychain) (*ApiPrivateKeychain, error) {
+func (a *ApiPrivateKeychain) FromPrivateKeychain(pk *wallet.PrivateKeychain) (
+	*ApiPrivateKeychain,
+	error,
+) {
 	if pk.SkRoot != nil {
 		skRootHex := pk.SkRoot.ToHexString()
 		a.SkRoot = &skRootHex
@@ -463,7 +466,10 @@ func (a *ApiWallet) ToWallet() (*wallet.Wallet, error) {
 	for i, limbs := range a.BlindedPublicShares {
 		publicShares[i] = ScalarFromUintLimbs(limbs)
 	}
-	if err := wallet.FromScalarsRecursive(&w.BlindedPublicShares, wallet.NewScalarIterator(publicShares)); err != nil {
+	if err := wallet.FromScalarsRecursive(
+		&w.BlindedPublicShares,
+		wallet.NewScalarIterator(publicShares),
+	); err != nil {
 		return nil, err
 	}
 
@@ -472,7 +478,10 @@ func (a *ApiWallet) ToWallet() (*wallet.Wallet, error) {
 	for i, limbs := range a.PrivateShares {
 		privateShares[i] = ScalarFromUintLimbs(limbs)
 	}
-	if err := wallet.FromScalarsRecursive(&w.PrivateShares, wallet.NewScalarIterator(privateShares)); err != nil {
+	if err := wallet.FromScalarsRecursive(
+		&w.PrivateShares,
+		wallet.NewScalarIterator(privateShares),
+	); err != nil {
 		return nil, err
 	}
 

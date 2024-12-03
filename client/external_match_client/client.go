@@ -70,8 +70,13 @@ func NewMainnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *Ex
 	return NewExternalMatchClient(mainnetBaseUrl, apiKey, apiSecret)
 }
 
-// NewExternalMatchClient creates a new ExternalMatchClient with the given base URL, api key, and api secret
-func NewExternalMatchClient(baseURL string, apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+// NewExternalMatchClient creates a new ExternalMatchClient with the given base
+// URL, api key, and api secret
+func NewExternalMatchClient(
+	baseURL string,
+	apiKey string,
+	apiSecret *wallet.HmacKey,
+) *ExternalMatchClient {
 	return &ExternalMatchClient{
 		apiKey:     apiKey,
 		httpClient: client.NewHttpClient(baseURL, apiSecret),
@@ -80,7 +85,9 @@ func NewExternalMatchClient(baseURL string, apiKey string, apiSecret *wallet.Hma
 
 // GetExternalMatchQuote requests a quote from the relayer
 // returns nil if no match is found
-func (c *ExternalMatchClient) GetExternalMatchQuote(order *api_types.ApiExternalOrder) (*api_types.ApiSignedQuote, error) {
+func (c *ExternalMatchClient) GetExternalMatchQuote(
+	order *api_types.ApiExternalOrder,
+) (*api_types.ApiSignedQuote, error) {
 	requestBody := api_types.ExternalQuoteRequest{
 		ExternalOrder: *order,
 	}
@@ -102,7 +109,9 @@ func (c *ExternalMatchClient) GetExternalMatchQuote(order *api_types.ApiExternal
 }
 
 // AssembleExternalQuote generates an external match bundle from a signed quote
-func (c *ExternalMatchClient) AssembleExternalQuote(quote *api_types.ApiSignedQuote) (*ExternalMatchBundle, error) {
+func (c *ExternalMatchClient) AssembleExternalQuote(
+	quote *api_types.ApiSignedQuote,
+) (*ExternalMatchBundle, error) {
 	requestBody := api_types.AssembleExternalQuoteRequest{
 		Quote:           *quote,
 		DoGasEstimation: false,
@@ -132,7 +141,9 @@ func (c *ExternalMatchClient) AssembleExternalQuote(quote *api_types.ApiSignedQu
 
 // GetExternalMatchBundle requests an external match bundle from the relayer
 // returns nil if no match is found
-func (c *ExternalMatchClient) GetExternalMatchBundle(request *api_types.ApiExternalOrder) (*ExternalMatchBundle, error) {
+func (c *ExternalMatchClient) GetExternalMatchBundle(
+	request *api_types.ApiExternalOrder,
+) (*ExternalMatchBundle, error) {
 	requestBody := api_types.ExternalMatchRequest{
 		ExternalOrder: *request,
 	}

@@ -151,7 +151,13 @@ func NewEmptyOrder() Order {
 }
 
 // Add a new function to create an order with some default values
-func NewOrder(quoteMint, baseMint Scalar, side OrderSide, amount Scalar, worstCasePrice FixedPoint) Order {
+func NewOrder(
+	quoteMint Scalar,
+	baseMint Scalar,
+	side OrderSide,
+	amount Scalar,
+	worstCasePrice FixedPoint,
+) Order {
 	return NewOrderBuilder().
 		WithId(uuid.New()).
 		WithQuoteMint(quoteMint).

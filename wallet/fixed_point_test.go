@@ -21,6 +21,9 @@ func TestFixedPoint(t *testing.T) {
 
 	// Check if the converted value is within tolerance of the original
 	if math.Abs(originalFloat-convertedFloat) > precisionTolerance {
-		t.Errorf("Conversion not within tolerance. Original: %f, Converted: %f", originalFloat, convertedFloat)
+		t.Errorf(
+			"Conversion not within tolerance. Original: %f, Converted: %f",
+			originalFloat, convertedFloat,
+		)
 	}
 }

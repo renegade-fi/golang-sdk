@@ -244,7 +244,9 @@ func (pk *FeeEncryptionKey) FromBytes(bytes []byte) error {
 	var yBytes [fr.Bytes]byte
 	copy(xBytes[:], bytes[:fr.Bytes])
 	copy(yBytes[:], bytes[fr.Bytes:])
+	//nolint:errcheck
 	pk.X.FromLittleEndianBytes(xBytes)
+	//nolint:errcheck
 	pk.Y.FromLittleEndianBytes(yBytes)
 	return nil
 }

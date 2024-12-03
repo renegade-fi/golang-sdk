@@ -199,7 +199,8 @@ func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecre
 	}, nil
 }
 
-// WalletShare represents a secret share of a wallet, containing only the elements of a wallet that are stored on-chain
+// WalletShare represents a secret share of a wallet, containing only the
+// elements of a wallet that are stored on-chain
 type WalletShare struct {
 	// Balances are the balances of the wallet
 	Balances [MaxBalances]Balance
@@ -236,8 +237,12 @@ func EmptyWalletShare(publicKeys PublicKeychain) (WalletShare, error) {
 	return share, nil
 }
 
-// SplitIntoShares splits a wallet share into two shares using the given private shares and blinder
-func (ws *WalletShare) SplitPublicPrivate(privateShares []Scalar, blinder Scalar) (WalletShare, WalletShare, error) {
+// SplitIntoShares splits a wallet share into two shares using the given private
+// shares and blinder
+func (ws *WalletShare) SplitPublicPrivate(
+	privateShares []Scalar,
+	blinder Scalar,
+) (WalletShare, WalletShare, error) {
 	// Serialize the wallet share into scalars
 	scalars, err := ToScalarsRecursive(ws)
 	if err != nil {
@@ -246,7 +251,9 @@ func (ws *WalletShare) SplitPublicPrivate(privateShares []Scalar, blinder Scalar
 
 	// The shares should be the same length as the scalars
 	if len(privateShares) != len(scalars) {
-		return WalletShare{}, WalletShare{}, fmt.Errorf("private shares and scalars have different lengths")
+		return WalletShare{}, WalletShare{}, fmt.Errorf(
+			"private shares and scalars have different lengths",
+		)
 	}
 
 	// Subtract the private shares from the scalars to get the public shares
@@ -275,7 +282,11 @@ func (ws *WalletShare) SplitPublicPrivate(privateShares []Scalar, blinder Scalar
 }
 
 // CombineShares combines two wallet shares into a single wallet share
-func CombineShares(publicShare WalletShare, privateShare WalletShare, blinder Scalar) (WalletShare, error) {
+func CombineShares(
+	publicShare WalletShare,
+	privateShare WalletShare,
+	blinder Scalar,
+) (WalletShare, error) {
 	publicScalars, err := ToScalarsRecursive(&publicShare)
 	if err != nil {
 		return WalletShare{}, err
@@ -361,7 +372,8 @@ func NewEmptyWalletFromSecrets(secrets *WalletSecrets) (*Wallet, error) {
 	}, nil
 }
 
-// walletSharesFromStream generates numScalarsWalletShare scalars from a CSPRNG seeded with the given scalar
+// walletSharesFromStream generates numScalarsWalletShare scalars from a
+// CSPRNG seeded with the given scalar
 func walletSharesFromStream(seed Scalar) []Scalar {
 	// Create a poseidon CSPRNG from the seed and generate numScalarsWalletShare scalars
 	csprng := renegade_crypto.NewPoseidonCSPRNG(fr.Element(seed))
@@ -376,7 +388,8 @@ func walletSharesFromStream(seed Scalar) []Scalar {
 	return scalars
 }
 
-// walletBlinderFromSeed generates a wallet blinder and blinder private share from a CSPRNG seeded with the given scalar
+// walletBlinderFromSeed generates a wallet blinder and blinder private share
+// from a CSPRNG seeded with the given scalar
 func walletBlinderFromSeed(seed Scalar) (Scalar, Scalar) {
 	csprng := renegade_crypto.NewPoseidonCSPRNG(fr.Element(seed))
 

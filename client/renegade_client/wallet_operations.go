@@ -67,7 +67,8 @@ func (c *RenegadeClient) lookupWallet(blocking bool) error {
 	path := api_types.LookupWalletPath
 
 	// Build the request
-	keys, err := new(api_types.ApiPrivateKeychain).FromPrivateKeychain(&c.walletSecrets.Keychain.PrivateKeys)
+	keys, err := new(api_types.ApiPrivateKeychain).
+		FromPrivateKeychain(&c.walletSecrets.Keychain.PrivateKeys)
 	if err != nil {
 		return err
 	}
@@ -100,9 +101,11 @@ func (c *RenegadeClient) lookupWallet(blocking bool) error {
 	return nil
 }
 
-// RefreshWallet refreshes the relayer's view of the wallet's state by looking up the wallet on-chain.
+// RefreshWallet refreshes the relayer's view of the wallet's state by looking up
+// the wallet on-chain.
 //
-// This method sends a request to the relayer to update its local state with the latest on-chain
+// This method sends a request to the relayer to update its local state with the
+// latest on-chain
 // information for the wallet associated with the client. It's useful for synchronizing the
 // relayer's view with the current blockchain state, especially after on-chain transactions.
 //

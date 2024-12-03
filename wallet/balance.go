@@ -108,7 +108,8 @@ func (w *Wallet) RemoveBalance(balance Balance) error {
 	return nil
 }
 
-// findMatchingBalance finds the index of a balance with the given mint, or -1 if no balance has the given mint
+// findMatchingBalance finds the index of a balance with the given mint, or -1 if no balance
+// has the given mint
 func (w *Wallet) findMatchingBalance(mint Scalar) int {
 	for i, balance := range w.Balances {
 		if balance.Mint == mint {
@@ -119,7 +120,8 @@ func (w *Wallet) findMatchingBalance(mint Scalar) int {
 	return -1
 }
 
-// findReplaceableBalance finds the first balance that may be replaced, returning the index of the balance, or -1 if no balance may be replaced
+// findReplaceableBalance finds the first balance that may be replaced,
+// returning the index of the balance, or -1 if no balance may be replaced
 func (w *Wallet) findReplaceableBalance() int {
 	for i, balance := range w.Balances {
 		if balance.IsZero() {

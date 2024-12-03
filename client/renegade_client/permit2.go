@@ -55,8 +55,11 @@ func (domain EIP712Domain) Hash() common.Hash {
 }
 
 // getPermitSigningHash gets the eip712 hash of the permit
-func getPermitSigningHash(permit PermitWitnessTransferFrom, domain EIP712Domain) (common.Hash, error) {
+func getPermitSigningHash(
+	permit PermitWitnessTransferFrom, domain EIP712Domain,
+) (common.Hash, error) {
 	// EIP-712 type hashes
+	//nolint:lll
 	permitTypeHash := crypto.Keccak256(
 		[]byte("PermitWitnessTransferFrom(TokenPermissions permitted,address spender,uint256 nonce,uint256 deadline,DepositWitness witness)DepositWitness(uint256[4] pkRoot)TokenPermissions(address token,uint256 amount)"),
 	)

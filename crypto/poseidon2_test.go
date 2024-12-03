@@ -112,6 +112,8 @@ var LARGE_TEST_VECTOR = []string{
 }
 
 // LARGE_TEST_VECTOR_HASH is the expected hash output for LARGE_TEST_VECTOR
+//
+//nolint:lll
 var LARGE_TEST_VECTOR_HASH = "7043431630205359021101812166882265280337929418769865370612041462630759989210"
 
 func feltFromString(s string) fr.Element {
@@ -218,5 +220,9 @@ func TestPoseidon2Sponge_LargeVector(t *testing.T) {
 	sponge := NewPoseidon2Sponge()
 	result := sponge.Hash(input)
 
-	assert.Equal(t, LARGE_TEST_VECTOR_HASH, result.String(), "Hash result for large test vector mismatch")
+	assert.Equal(t,
+		LARGE_TEST_VECTOR_HASH,
+		result.String(),
+		"Hash result for large test vector mismatch",
+	)
 }

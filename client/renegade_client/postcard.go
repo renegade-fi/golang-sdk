@@ -8,7 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// postcardSerializeTransfer serializes a withdrawal transfer in the format expected by the renegade contracts:
+// postcardSerializeTransfer serializes a withdrawal transfer in the format
+// expected by the renegade contracts:
 //
 //	https://github.com/renegade-fi/renegade-contracts/blob/main/contracts-common/src/types.rs#L204
 func postcardSerializeTransfer(mint string, amount *big.Int, destination string) ([]byte, error) {

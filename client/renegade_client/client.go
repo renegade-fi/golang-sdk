@@ -59,8 +59,11 @@ func NewSepoliaRenegadeClient(baseURL string, ethKey *ecdsa.PrivateKey) (*Renega
 	return NewRenegadeClientWithConfig(baseURL, ethKey, ArbitrumSepoliaConfig)
 }
 
-// NewRenegadeClientWithConfig creates a new Client with the given base URL, auth key, and chain config
-func NewRenegadeClientWithConfig(baseURL string, ethKey *ecdsa.PrivateKey, config ChainConfig) (*RenegadeClient, error) {
+// NewRenegadeClientWithConfig creates a new Client with the given base URL, auth
+// key, and chain config
+func NewRenegadeClientWithConfig(
+	baseURL string, ethKey *ecdsa.PrivateKey, config ChainConfig,
+) (*RenegadeClient, error) {
 	walletInfo, err := wallet.DeriveWalletSecrets(ethKey, config.ChainID)
 	if err != nil {
 		return nil, err
@@ -104,9 +107,11 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*wallet.Wallet, error) {
 	return c.getBackOfQueueWallet()
 }
 
-// CheckWallet verifies the wallet's existence in the relayer's state and retrieves it from the blockchain if necessary.
+// CheckWallet verifies the wallet's existence in the relayer's state and retrieves
+// it from the blockchain if necessary.
 //
-// This method first attempts to fetch the wallet from the relayer's local state using GetWallet().
+// This method first attempts to fetch the wallet from the relayer's local state
+// using GetWallet().
 // If successful, it returns the wallet immediately. If the wallet is not found in the local state,
 // it initiates a blockchain lookup using LookupWallet() to retrieve the wallet information.
 //
@@ -114,8 +119,9 @@ func (c *RenegadeClient) GetBackOfQueueWallet() (*wallet.Wallet, error) {
 //   - *wallet.Wallet: The retrieved wallet, if found either in local state or on-chain.
 //   - error: An error if both local retrieval and on-chain lookup fail, nil otherwise.
 //
-// This method is useful for ensuring that the client has the most up-to-date wallet information,
-// especially in scenarios where the wallet might not be synchronized between the relayer and the blockchain.
+// This method is useful for ensuring that the client has the most up-to-date wallet
+// information, especially in scenarios where the wallet might not be synchronized
+// between the relayer and the blockchain.
 func (c *RenegadeClient) CheckWallet() (*wallet.Wallet, error) {
 	wallet, err := c.GetWallet()
 	if err == nil {
@@ -143,7 +149,8 @@ func (c *RenegadeClient) LookupWallet() (*wallet.Wallet, error) {
 	return c.getWallet()
 }
 
-// RefreshWallet refreshes the relayer's view of the wallet's state by looking up the wallet on-chain.
+// RefreshWallet refreshes the relayer's view of the wallet's state by looking up
+// the wallet on-chain.
 //
 // This method sends a request to the relayer to update its local state with the latest on-chain
 // information for the wallet associated with the client. It's useful for synchronizing the
@@ -199,7 +206,9 @@ func (c *RenegadeClient) CreateWallet() (*wallet.Wallet, error) {
 // The method handles the entire deposit flow, including updating the local wallet
 // state, approving the Permit2 contract for spending, and submitting the deposit
 // request to the Renegade relayer.
-func (c *RenegadeClient) Deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*wallet.Wallet, error) {
+func (c *RenegadeClient) Deposit(
+	mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey,
+) (*wallet.Wallet, error) {
 	if err := c.deposit(mint, amount, ethPrivateKey, true /* blocking */); err != nil {
 		return nil, err
 	}
@@ -228,7 +237,9 @@ func (c *RenegadeClient) Withdraw(mint string, amount *big.Int) (*wallet.Wallet,
 }
 
 // WithdrawToAddress withdraws funds from the wallet to the given address
-func (c *RenegadeClient) WithdrawToAddress(mint string, amount *big.Int, destination string) (*wallet.Wallet, error) {
+func (c *RenegadeClient) WithdrawToAddress(
+	mint string, amount *big.Int, destination string,
+) (*wallet.Wallet, error) {
 	if err := c.withdrawToAddress(mint, amount, destination, true /* blocking */); err != nil {
 		return nil, err
 	}
@@ -320,7 +331,9 @@ func (c *RenegadeClient) createRpcClient() (*ethclient.Client, error) {
 }
 
 // createTransactor creates a new transactor with the given private key and chain ID
-func (c *RenegadeClient) createTransactor(ethPrivateKey *ecdsa.PrivateKey) (*bind.TransactOpts, error) {
+func (c *RenegadeClient) createTransactor(
+	ethPrivateKey *ecdsa.PrivateKey,
+) (*bind.TransactOpts, error) {
 	chainID := big.NewInt(int64(c.chainConfig.ChainID))
 	auth, err := bind.NewKeyedTransactorWithChainID(ethPrivateKey, chainID)
 	if err != nil {

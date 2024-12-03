@@ -19,7 +19,10 @@ func (c *RenegadeClient) placeOrder(order *wallet.Order, blocking bool) error {
 	if err != nil {
 		return err
 	}
-	backOfQueueWallet.Reblind()
+	err = backOfQueueWallet.Reblind()
+	if err != nil {
+		return err
+	}
 
 	// Sign the commitment to the new wallet
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)
@@ -70,7 +73,10 @@ func (c *RenegadeClient) cancelOrder(orderId uuid.UUID, blocking bool) error {
 	if err != nil {
 		return err
 	}
-	backOfQueueWallet.Reblind()
+	err = backOfQueueWallet.Reblind()
+	if err != nil {
+		return err
+	}
 
 	// Get the wallet update auth
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)

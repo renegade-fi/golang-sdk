@@ -19,7 +19,9 @@ import (
 )
 
 // deposit deposits funds into the wallet
-func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey, blocking bool) error {
+func (c *RenegadeClient) deposit(
+	mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey, blocking bool,
+) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
@@ -32,7 +34,10 @@ func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ec
 	if err != nil {
 		return err
 	}
-	backOfQueueWallet.Reblind()
+	err = backOfQueueWallet.Reblind()
+	if err != nil {
+		return err
+	}
 
 	// Approve Permit2 contract to spend the deposited amount
 	req, err := c.setupDeposit(mint, amount, ethPrivateKey)
@@ -66,8 +71,11 @@ func (c *RenegadeClient) deposit(mint string, amount *big.Int, ethPrivateKey *ec
 	return nil
 }
 
-// setupDeposit sets up the deposit request, this includes approving the Permit2 contract, and generating the witness and signature
-func (c *RenegadeClient) setupDeposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*api_types.DepositRequest, error) {
+// setupDeposit sets up the deposit request, this includes approving the Permit2
+// contract, and generating the witness and signature
+func (c *RenegadeClient) setupDeposit(
+	mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey,
+) (*api_types.DepositRequest, error) {
 	// Approve the Permit2 contract to spend the balance
 	err := c.approvePermit2Deposit(mint, amount, ethPrivateKey)
 	if err != nil {
@@ -101,7 +109,9 @@ func (c *RenegadeClient) withdraw(mint string, amount *big.Int, blocking bool) e
 }
 
 // WithdrawToAddress withdraws funds from the wallet to the given address
-func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destination string, blocking bool) error {
+func (c *RenegadeClient) withdrawToAddress(
+	mint string, amount *big.Int, destination string, blocking bool,
+) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
@@ -114,7 +124,10 @@ func (c *RenegadeClient) withdrawToAddress(mint string, amount *big.Int, destina
 	if err != nil {
 		return err
 	}
-	backOfQueueWallet.Reblind()
+	err = backOfQueueWallet.Reblind()
+	if err != nil {
+		return err
+	}
 
 	// Get the wallet update auth
 	auth, err := getWalletUpdateAuth(backOfQueueWallet)
@@ -170,7 +183,9 @@ func (c *RenegadeClient) payFees() error {
 // --- Helpers --- //
 
 // approvePermit2Deposit approves the Permit2 contract to spend the deposited amount
-func (c *RenegadeClient) approvePermit2Deposit(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) error {
+func (c *RenegadeClient) approvePermit2Deposit(
+	mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey,
+) error {
 	// Create an RPC client
 	rpcClient, err := c.createRpcClient()
 	if err != nil {
@@ -196,7 +211,10 @@ func (c *RenegadeClient) approvePermit2Deposit(mint string, amount *big.Int, eth
 	}
 
 	if bal.Cmp(amount) < 0 {
-		return fmt.Errorf("insufficient balance for deposit: have %s, need %s", bal.String(), amount.String())
+		return fmt.Errorf(
+			"insufficient balance for deposit: have %s, need %s",
+			bal.String(), amount.String(),
+		)
 	}
 
 	// Check existing allowance
@@ -208,12 +226,18 @@ func (c *RenegadeClient) approvePermit2Deposit(mint string, amount *big.Int, eth
 	}
 
 	if allowance.Cmp(amount) >= 0 {
-		log.Printf("Existing allowance (%s) is sufficient for the deposit amount (%s)", allowance.String(), amount.String())
+		log.Printf(
+			"Existing allowance (%s) is sufficient for the deposit amount (%s)",
+			allowance.String(), amount.String(),
+		)
 		return nil
 	}
 
 	// Approve the Permit2 contract to spend the balance
-	log.Printf("Existing allowance (%s) is insufficient. Approving Permit2 contract to spend %s tokens", allowance.String(), amount.String())
+	log.Printf(
+		"Existing allowance (%s) is insufficient. Approving Permit2 contract to spend %s tokens",
+		allowance.String(), amount.String(),
+	)
 	tx, err := erc20Contract.Approve(auth, permit2Addr, amount)
 	if err != nil {
 		return fmt.Errorf("failed to approve Permit2 contract: %w", err)
@@ -229,7 +253,9 @@ func (c *RenegadeClient) approvePermit2Deposit(mint string, amount *big.Int, eth
 }
 
 // generatePermit2Signature generates a Permit2 signature for the deposit
-func (c *RenegadeClient) generatePermit2Signature(mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey) (*PermitWitnessTransferFrom, []byte, error) {
+func (c *RenegadeClient) generatePermit2Signature(
+	mint string, amount *big.Int, ethPrivateKey *ecdsa.PrivateKey,
+) (*PermitWitnessTransferFrom, []byte, error) {
 	// Construct the EIP712 domain
 	permit2Address := common.HexToAddress(c.chainConfig.Permit2Address)
 	chainId := big.NewInt(int64(c.chainConfig.ChainID))
@@ -281,7 +307,9 @@ func (c *RenegadeClient) generatePermit2Signature(mint string, amount *big.Int, 
 }
 
 // generateWithdrawalSignature generates a signature for the withdrawal
-func (c *RenegadeClient) generateWithdrawalSignature(mint string, amount *big.Int, destination string) (*string, error) {
+func (c *RenegadeClient) generateWithdrawalSignature(
+	mint string, amount *big.Int, destination string,
+) (*string, error) {
 	rootKey := ecdsa.PrivateKey(*c.walletSecrets.Keychain.SkRoot())
 	sigBytes, err := postcardSerializeTransfer(mint, amount, destination)
 	if err != nil {

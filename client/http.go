@@ -77,7 +77,12 @@ func (c *HttpClient) GetWithAuth(path string, body interface{}, response interfa
 }
 
 // GetWithAuthAndHeaders performs an authenticated GET request with additional headers
-func (c *HttpClient) GetWithAuthAndHeaders(path string, headers *http.Header, body interface{}, response interface{}) error {
+func (c *HttpClient) GetWithAuthAndHeaders(
+	path string,
+	headers *http.Header,
+	body interface{},
+	response interface{},
+) error {
 	respBody, err := c.doRequest(http.MethodGet, path, headers, body, true /* withAuth */)
 	if err != nil {
 		return err
@@ -86,12 +91,21 @@ func (c *HttpClient) GetWithAuthAndHeaders(path string, headers *http.Header, bo
 }
 
 // PostWithAuth performs an authenticated POST request
-func (c *HttpClient) PostWithAuth(path string, body interface{}, response interface{}) error {
+func (c *HttpClient) PostWithAuth(
+	path string,
+	body interface{},
+	response interface{},
+) error {
 	return c.PostWithAuthAndHeaders(path, nil /* headers */, body, response)
 }
 
 // PostWithAuthAndHeaders performs an authenticated POST request with additional headers
-func (c *HttpClient) PostWithAuthAndHeaders(path string, headers *http.Header, body interface{}, response interface{}) error {
+func (c *HttpClient) PostWithAuthAndHeaders(
+	path string,
+	headers *http.Header,
+	body interface{},
+	response interface{},
+) error {
 	respBody, err := c.doRequest(http.MethodPost, path, headers, body, true /* withAuth */)
 	if err != nil {
 		return err
@@ -100,18 +114,35 @@ func (c *HttpClient) PostWithAuthAndHeaders(path string, headers *http.Header, b
 }
 
 // PostWithAuthRaw performs an authenticated POST request and returns the raw response
-func (c *HttpClient) PostWithAuthRaw(path string, headers *http.Header, body interface{}) (int, []byte, error) {
+func (c *HttpClient) PostWithAuthRaw(
+	path string,
+	headers *http.Header,
+	body interface{},
+) (int, []byte, error) {
 	return c.doRequestWithStatus(http.MethodPost, path, headers, body, true /* withAuth */)
 }
 
 // doRequest performs an HTTP request with optional authentication
-func (c *HttpClient) doRequest(method, path string, headers *http.Header, body interface{}, withAuth bool) ([]byte, error) {
+func (c *HttpClient) doRequest(
+	method,
+	path string,
+	headers *http.Header,
+	body interface{},
+	withAuth bool,
+) ([]byte, error) {
 	_, respBody, err := c.doRequestWithStatus(method, path, headers, body, withAuth)
 	return respBody, err
 }
 
-// doRequestWithStatus performs an HTTP request with optional authentication and returns the raw response with the status code
-func (c *HttpClient) doRequestWithStatus(method, path string, headers *http.Header, body interface{}, withAuth bool) (int, []byte, error) {
+// doRequestWithStatus performs an HTTP request with optional authentication and
+// returns the raw response with the status code
+func (c *HttpClient) doRequestWithStatus(
+	method,
+	path string,
+	headers *http.Header,
+	body interface{},
+	withAuth bool,
+) (int, []byte, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	// Marshal the body
@@ -153,7 +184,10 @@ func (c *HttpClient) doRequestWithStatus(method, path string, headers *http.Head
 	// Check the status code
 	statusCode := resp.StatusCode
 	if statusCode < 200 || statusCode >= 300 {
-		return statusCode, respBody, fmt.Errorf("unexpected status code: %d, body: %s", statusCode, string(respBody))
+		return statusCode, respBody, fmt.Errorf(
+			"unexpected status code: %d, body: %s",
+			statusCode, string(respBody),
+		)
 	}
 
 	return statusCode, respBody, nil

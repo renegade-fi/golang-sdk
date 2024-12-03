@@ -71,7 +71,11 @@ func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*Keychain, error) {
 }
 
 // DeriveWalletSeeds derives the blinder and secret share seeds from the derivation key
-func DeriveWalletSeeds(privateKey *ecdsa.PrivateKey, chainId uint64) (blinderSeed, shareSeed Scalar, err error) {
+func DeriveWalletSeeds(privateKey *ecdsa.PrivateKey, chainId uint64) (
+	blinderSeed,
+	shareSeed Scalar,
+	err error,
+) {
 	// Create the derivation key
 	derivationKey, err := createDerivationKey(privateKey, chainId)
 	if err != nil {
