@@ -132,9 +132,16 @@ func (c *ExternalMatchClient) GetExternalMatchQuote(
 func (c *ExternalMatchClient) AssembleExternalQuote(
 	quote *api_types.ApiSignedQuote,
 ) (*ExternalMatchBundle, error) {
+	return c.AssembleExternalQuoteWithReceiver(quote, nil /* receiverAddress */)
+}
+
+func (c *ExternalMatchClient) AssembleExternalQuoteWithReceiver(
+	quote *api_types.ApiSignedQuote,
+	receiverAddress *string,
+) (*ExternalMatchBundle, error) {
 	requestBody := api_types.AssembleExternalQuoteRequest{
 		Quote:           *quote,
-		DoGasEstimation: false,
+		ReceiverAddress: receiverAddress,
 	}
 
 	var response api_types.ExternalMatchResponse
@@ -164,8 +171,18 @@ func (c *ExternalMatchClient) AssembleExternalQuote(
 func (c *ExternalMatchClient) GetExternalMatchBundle(
 	request *api_types.ApiExternalOrder,
 ) (*ExternalMatchBundle, error) {
+	return c.GetExternalMatchBundleWithReceiver(request, nil /* receiverAddress */)
+}
+
+// GetExternalMatchBundleWithReceiver requests an external match bundle from the relayer
+// returns nil if no match is found
+func (c *ExternalMatchClient) GetExternalMatchBundleWithReceiver(
+	request *api_types.ApiExternalOrder,
+	receiverAddress *string,
+) (*ExternalMatchBundle, error) {
 	requestBody := api_types.ExternalMatchRequest{
-		ExternalOrder: *request,
+		ExternalOrder:   *request,
+		ReceiverAddress: receiverAddress,
 	}
 
 	var response api_types.ExternalMatchResponse
