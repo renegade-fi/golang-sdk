@@ -21,8 +21,6 @@ const (
 )
 
 func main() {
-	// ... Token Approvals to Darkpool ... //
-
 	// Get API credentials from environment
 	apiKey := os.Getenv("EXTERNAL_MATCH_KEY")
 	apiSecret := os.Getenv("EXTERNAL_MATCH_SECRET")
@@ -37,7 +35,7 @@ func main() {
 
 	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
 
-	// You can fetch token mappings from the relayer using the client
+	// Fetch token mappings from the relayer
 	quoteMint, err := findTokenAddr("USDC", externalMatchClient)
 	if err != nil {
 		panic(err)
@@ -47,9 +45,7 @@ func main() {
 		panic(err)
 	}
 
-	// Request an external match
-	// We can denominate the order size in either the quote or base token with
-	// `WithQuoteAmount` or `WithBaseAmount` respectively.
+	// Create order for 20 USDC worth of WETH
 	quoteAmount := new(big.Int).SetUint64(20_000_000) // $20 USDC
 	minFillSize := big.NewInt(0)
 	order, err := api_types.NewExternalOrderBuilder().
@@ -63,13 +59,13 @@ func main() {
 		panic(err)
 	}
 
-	if err := getQuoteAndSubmit(order, externalMatchClient); err != nil {
+	if err := getQuoteAndSubmitWithReceiver(order, externalMatchClient); err != nil {
 		panic(err)
 	}
 }
 
-// getQuoteAndSubmit gets a quote, assembled is, then submits the bundle
-func getQuoteAndSubmit(order *api_types.ApiExternalOrder, client *external_match_client.ExternalMatchClient) error {
+// getQuoteAndSubmitWithReceiver gets a quote, assembles it with a separate receiver, then submits
+func getQuoteAndSubmitWithReceiver(order *api_types.ApiExternalOrder, client *external_match_client.ExternalMatchClient) error {
 	// 1. Get a quote from the relayer
 	fmt.Println("Getting quote...")
 	quote, err := client.GetExternalMatchQuote(order)
@@ -82,11 +78,10 @@ func getQuoteAndSubmit(order *api_types.ApiExternalOrder, client *external_match
 		return nil
 	}
 
-	// ... Check if the quote is acceptable ... //
-
-	// 2. Assemble the bundle
-	fmt.Println("Assembling bundle...")
-	bundle, err := client.AssembleExternalQuote(quote)
+	// 2. Assemble the bundle with a separate receiver address
+	receiverAddress := "0xC5fE800A3D92112473e4E811296F194DA7b26BA7"
+	fmt.Println("Assembling bundle with receiver address:", receiverAddress)
+	bundle, err := client.AssembleExternalQuoteWithReceiver(quote, &receiverAddress)
 	if err != nil {
 		return err
 	}
@@ -108,7 +103,6 @@ func getQuoteAndSubmit(order *api_types.ApiExternalOrder, client *external_match
 
 // submitBundle submits the bundle to the sequencer
 func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
-	// Initialize eth client
 	ethClient, err := getEthClient()
 	if err != nil {
 		panic(err)
@@ -119,7 +113,6 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 		panic(err)
 	}
 
-	// Send the transaction to the sequencer
 	gasPrice, err := ethClient.SuggestGasPrice(context.Background())
 	if err != nil {
 		panic(err)
@@ -131,17 +124,16 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 	}
 
 	ethTx := types.NewTx(&types.DynamicFeeTx{
-		ChainID:   big.NewInt(chainId), // Sepolia chain ID
+		ChainID:   big.NewInt(chainId),
 		Nonce:     nonce,
-		GasTipCap: gasPrice,                                  // Use suggested gas price as tip cap
-		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)), // Fee cap at 2x gas price
-		Gas:       uint64(10_000_000),                        // Gas limit
-		To:        &bundle.SettlementTx.To,                   // Contract address
-		Value:     bundle.SettlementTx.Value,                 // No ETH transfer
-		Data:      []byte(bundle.SettlementTx.Data),          // Contract call data
+		GasTipCap: gasPrice,
+		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)),
+		Gas:       uint64(10_000_000),
+		To:        &bundle.SettlementTx.To,
+		Value:     bundle.SettlementTx.Value,
+		Data:      []byte(bundle.SettlementTx.Data),
 	})
 
-	// Sign and send transaction
 	signer := types.LatestSignerForChainID(big.NewInt(chainId))
 	signedTx, err := types.SignTx(ethTx, signer, privateKey)
 	if err != nil {
@@ -182,15 +174,12 @@ func getPrivateKey() (*ecdsa.PrivateKey, error) {
 	return crypto.HexToECDSA(privKeyHex)
 }
 
-// findTokenAddr fetches the address of a token from the relayer
 func findTokenAddr(symbol string, client *external_match_client.ExternalMatchClient) (string, error) {
-	// Fetch the list of supported tokens from the relayer
 	tokens, err := client.GetSupportedTokens()
 	if err != nil {
 		return "", err
 	}
 
-	// Find the token with the matching symbol
 	for _, token := range tokens {
 		if token.Symbol == symbol {
 			return token.Address, nil

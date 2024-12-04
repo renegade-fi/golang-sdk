@@ -275,7 +275,11 @@ type TaskHistoryResponse struct {
 
 // ExternalMatchRequest is a request to generate an external match
 type ExternalMatchRequest struct {
-	ExternalOrder ApiExternalOrder `json:"external_order"`
+	ExternalOrder   ApiExternalOrder `json:"external_order"`
+	DoGasEstimation bool             `json:"do_gas_estimation"`
+	// ReceiverAddress is the address to receive the settlement,
+	// i.e. the address to which the darkpool will send tokens
+	ReceiverAddress *string `json:"receiver_address,omitempty"`
 }
 
 // ExternalMatchResponse is the response body for the ExternalMatch action
@@ -298,4 +302,7 @@ type ExternalQuoteResponse struct {
 type AssembleExternalQuoteRequest struct {
 	Quote           ApiSignedQuote `json:"signed_quote"`
 	DoGasEstimation bool           `json:"do_gas_estimation"`
+	// ReceiverAddress is the address to receive the settlement,
+	// i.e. the address to which the darkpool will send tokens
+	ReceiverAddress *string `json:"receiver_address,omitempty"`
 }
