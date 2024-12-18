@@ -305,4 +305,6 @@ type AssembleExternalQuoteRequest struct {
 	// ReceiverAddress is the address to receive the settlement,
 	// i.e. the address to which the darkpool will send tokens
 	ReceiverAddress *string `json:"receiver_address,omitempty"`
+	// UpdatedOrder is the order to use for the assembly, if different from the quote
+	UpdatedOrder *ApiExternalOrder `json:"updated_order,omitempty"`
 }

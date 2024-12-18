@@ -53,6 +53,40 @@ func toSettlementTransaction(tx *api_types.ApiSettlementTransaction) *Settlement
 	}
 }
 
+// AssembleExternalMatchOptions represents the options for an assembly request
+type AssembleExternalMatchOptions struct {
+	ReceiverAddress *string
+	DoGasEstimation bool
+	UpdatedOrder    *api_types.ApiExternalOrder
+}
+
+// WithReceiverAddress sets the receiver address for the assembly options
+func (o *AssembleExternalMatchOptions) WithReceiverAddress(address *string) *AssembleExternalMatchOptions {
+	o.ReceiverAddress = address
+	return o
+}
+
+// WithGasEstimation sets whether to perform gas estimation
+func (o *AssembleExternalMatchOptions) WithGasEstimation(estimate bool) *AssembleExternalMatchOptions {
+	o.DoGasEstimation = estimate
+	return o
+}
+
+// WithUpdatedOrder sets the updated order for the assembly options
+func (o *AssembleExternalMatchOptions) WithUpdatedOrder(order *api_types.ApiExternalOrder) *AssembleExternalMatchOptions {
+	o.UpdatedOrder = order
+	return o
+}
+
+// NewAssembleExternalMatchOptions creates a new AssembleExternalMatchOptions with default values
+func NewAssembleExternalMatchOptions() *AssembleExternalMatchOptions {
+	return &AssembleExternalMatchOptions{
+		ReceiverAddress: nil,
+		DoGasEstimation: false,
+		UpdatedOrder:    nil,
+	}
+}
+
 // ExternalMatchClient represents a client for the external match API
 //
 // This client can be used to request external match bundles from a relayer.
@@ -135,13 +169,26 @@ func (c *ExternalMatchClient) AssembleExternalQuote(
 	return c.AssembleExternalQuoteWithReceiver(quote, nil /* receiverAddress */)
 }
 
+// AssembleExternalQuoteWithReceiver generates an external match bundle from a signed quote
+// returns nil if no match is found
 func (c *ExternalMatchClient) AssembleExternalQuoteWithReceiver(
 	quote *api_types.ApiSignedQuote,
 	receiverAddress *string,
 ) (*ExternalMatchBundle, error) {
+	options := NewAssembleExternalMatchOptions().WithReceiverAddress(receiverAddress)
+	return c.AssembleExternalMatchWithOptions(quote, options)
+}
+
+// AssembleExternalMatchWithOptions assembles an external quote with the given options struct
+func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
+	quote *api_types.ApiSignedQuote,
+	options *AssembleExternalMatchOptions,
+) (*ExternalMatchBundle, error) {
 	requestBody := api_types.AssembleExternalQuoteRequest{
 		Quote:           *quote,
-		ReceiverAddress: receiverAddress,
+		ReceiverAddress: options.ReceiverAddress,
+		DoGasEstimation: options.DoGasEstimation,
+		UpdatedOrder:    options.UpdatedOrder,
 	}
 
 	var response api_types.ExternalMatchResponse
