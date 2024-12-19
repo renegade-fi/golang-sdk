@@ -20,6 +20,7 @@ type ScalarSerialize interface {
 	NumScalars() int
 }
 
+// FromScalars converts a `ScalarIterator` to
 func (s *Scalar) FromScalars(scalars *ScalarIterator) error {
 	scalar, err := scalars.Next()
 	if err != nil {
@@ -29,16 +30,20 @@ func (s *Scalar) FromScalars(scalars *ScalarIterator) error {
 	return nil
 }
 
+// ToScalars converts a `Scalar` to a slice fo `Scalar`s
 func (s *Scalar) ToScalars() ([]Scalar, error) {
 	return []Scalar{*s}, nil
 }
 
+// NumScalars returns the number of `Scalar`s in the `Scalar`
 func (s *Scalar) NumScalars() int {
 	return 1
 }
 
+// Uint64 is a type that can be serialized to a slice of `Scalar`s
 type Uint64 uint64
 
+// FromScalars converts a `ScalarIterator` to a `Uint64`
 func (s *Uint64) FromScalars(scalars *ScalarIterator) error {
 	scalar, err := scalars.Next()
 	if err != nil {
@@ -50,11 +55,13 @@ func (s *Uint64) FromScalars(scalars *ScalarIterator) error {
 	return nil
 }
 
+// ToScalars converts a `Uint64` to a slice of `Scalar`s
 func (s *Uint64) ToScalars() ([]Scalar, error) {
 	elt := fr.NewElement(uint64(*s))
 	return []Scalar{Scalar(elt)}, nil
 }
 
+// NumScalars returns the number of `Scalar`s in the `Uint64`
 func (s *Uint64) NumScalars() int {
 	return 1
 }
@@ -152,12 +159,12 @@ func (s *ScalarIterator) Next() (Scalar, error) {
 	return scalar, nil
 }
 
-// Remaining returns the remaining scalars in the iterator
+// NumRemaining returns the remaining scalars in the iterator
 func (s *ScalarIterator) NumRemaining() int {
 	return len(s.scalars) - s.index
 }
 
-// FromScalarsReflection is a helper function to deserialize a struct from a
+// FromScalarsRecursive is a helper function to deserialize a struct from a
 // slice of scalars using reflection
 func FromScalarsRecursive(s interface{}, scalars *ScalarIterator) error {
 	// If the type implements ScalarSerialize, use the specialized method

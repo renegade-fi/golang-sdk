@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/google/uuid"
+
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	"github.com/renegade-fi/golang-sdk/wallet"
 )
@@ -41,8 +42,8 @@ func (c *RenegadeClient) placeOrder(order *wallet.Order, blocking bool) error {
 		WalletUpdateAuthorization: *auth,
 	}
 
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildCreateOrderPath(walletId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildCreateOrderPath(walletID)
 	resp := api_types.CreateOrderResponse{}
 
 	err = c.httpClient.PostWithAuth(path, req, &resp)
@@ -61,7 +62,7 @@ func (c *RenegadeClient) placeOrder(order *wallet.Order, blocking bool) error {
 }
 
 // cancelOrder cancels an order via the Renegade API
-func (c *RenegadeClient) cancelOrder(orderId uuid.UUID, blocking bool) error {
+func (c *RenegadeClient) cancelOrder(orderID uuid.UUID, blocking bool) error {
 	// Get the back of the queue wallet
 	backOfQueueWallet, err := c.GetBackOfQueueWallet()
 	if err != nil {
@@ -69,7 +70,7 @@ func (c *RenegadeClient) cancelOrder(orderId uuid.UUID, blocking bool) error {
 	}
 
 	// Cancel the order
-	err = backOfQueueWallet.CancelOrder(orderId)
+	err = backOfQueueWallet.CancelOrder(orderID)
 	if err != nil {
 		return err
 	}
@@ -85,8 +86,8 @@ func (c *RenegadeClient) cancelOrder(orderId uuid.UUID, blocking bool) error {
 	}
 
 	// Post the order to the relayer
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildCancelOrderPath(walletId, orderId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildCancelOrderPath(walletID, orderID)
 	req := api_types.CancelOrderRequest{
 		WalletUpdateAuthorization: *auth,
 	}

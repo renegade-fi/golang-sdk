@@ -46,7 +46,7 @@ func TestScalarToFromLittleEndianBytes(t *testing.T) {
 	// Convert to little-endian bytes and back
 	littleEndianBytes := randomScalar.LittleEndianBytes()
 	var newScalar Scalar
-	newScalar.FromLittleEndianBytes(littleEndianBytes)
+	newScalar.FromLittleEndianBytes(littleEndianBytes) //nolint:errcheck,gosec
 
 	// Compare the original and new scalar
 	assert.Equal(t, randomScalar, newScalar, "Scalar -> LittleEndianBytes -> Scalar conversion failed")

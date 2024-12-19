@@ -1,3 +1,5 @@
+// Package main is an example of how to use the Renegade SDK to get an external
+// quote, validate it, and submit it to the sequencer.
 package main
 
 import (
@@ -10,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
 	"github.com/renegade-fi/golang-sdk/wallet"
@@ -19,7 +22,7 @@ const (
 	quoteMint       = "0xdf8d259c04020562717557f2b5a3cf28e92707d1" // USDC
 	baseMint        = "0xc3414a7ef14aaaa9c4522dfc00a4e66e74e9c25a" // WETH
 	darkpoolAddress = "0x9af58f1ff20ab22e819e40b57ffd784d115a9ef5"
-	chainId         = 421614 // Testnet
+	chainID         = 421614 // Testnet
 )
 
 func main() {
@@ -97,7 +100,7 @@ func getQuoteAndSubmit(order *api_types.ApiExternalOrder, client *external_match
 		return err
 	}
 
-	fmt.Println("Bundle submitted successfully!\n")
+	fmt.Println("Bundle submitted successfully!")
 	return nil
 }
 
@@ -147,7 +150,7 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 	}
 
 	ethTx := types.NewTx(&types.DynamicFeeTx{
-		ChainID:   big.NewInt(chainId), // Sepolia chain ID
+		ChainID:   big.NewInt(chainID), // Sepolia chain ID
 		Nonce:     nonce,
 		GasTipCap: gasPrice,                                  // Use suggested gas price as tip cap
 		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)), // Fee cap at 2x gas price
@@ -158,7 +161,7 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 	})
 
 	// Sign and send transaction
-	signer := types.LatestSignerForChainID(big.NewInt(chainId))
+	signer := types.LatestSignerForChainID(big.NewInt(chainID))
 	signedTx, err := types.SignTx(ethTx, signer, privateKey)
 	if err != nil {
 		panic(err)
@@ -177,16 +180,16 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 // | Helpers |
 // -----------
 
-func getRpcUrl() string {
-	rpcUrl := os.Getenv("RPC_URL")
-	if rpcUrl == "" {
+func getRpcURL() string { //nolint:revive
+	rpcURL := os.Getenv("RPC_URL")
+	if rpcURL == "" {
 		panic("RPC_URL environment variable not set")
 	}
-	return rpcUrl
+	return rpcURL
 }
 
 func getEthClient() (*ethclient.Client, error) {
-	return ethclient.Dial(getRpcUrl())
+	return ethclient.Dial(getRpcURL())
 }
 
 func getPrivateKey() (*ecdsa.PrivateKey, error) {

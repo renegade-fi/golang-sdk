@@ -1,4 +1,4 @@
-package external_match_client
+package external_match_client //nolint:revive
 
 import (
 	"encoding/json"
@@ -7,17 +7,19 @@ import (
 	"net/http"
 
 	geth_common "github.com/ethereum/go-ethereum/common"
+
 	"github.com/renegade-fi/golang-sdk/client"
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
+//nolint:revive
 const (
 	testnetBaseUrl        = "https://testnet.auth-server.renegade.fi:3000"
 	testnetRelayerBaseUrl = "https://testnet.cluster0.renegade.fi:3000"
 	mainnetBaseUrl        = "https://mainnet.auth-server.renegade.fi:3000"
 	mainnetRelayerBaseUrl = "https://mainnet.cluster0.renegade.fi:3000"
-	apiKeyHeader          = "X-Renegade-Api-Key"
+	apiKeyHeader          = "X-Renegade-Api-Key" //nolint:gosec
 )
 
 // ExternalMatchBundle is the application level analog to the ApiExternalMatchBundle
@@ -94,7 +96,7 @@ func NewAssembleExternalMatchOptions() *AssembleExternalMatchOptions {
 type ExternalMatchClient struct {
 	apiKey            string
 	httpClient        *client.HttpClient
-	relayerHttpClient *client.HttpClient
+	relayerHttpClient *client.HttpClient //nolint:revive
 }
 
 // NewTestnetExternalMatchClient creates a new ExternalMatchClient for the testnet

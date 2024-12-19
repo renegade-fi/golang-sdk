@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
 	"github.com/renegade-fi/golang-sdk/wallet"

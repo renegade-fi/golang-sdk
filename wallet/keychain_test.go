@@ -9,7 +9,7 @@ import (
 func TestScalarLimbsToBigInt(t *testing.T) {
 	// Sample a random big.Int
 	limit := new(big.Int).Lsh(big.NewInt(1), 256)
-	r := rand.New(rand.NewSource(0))
+	r := rand.New(rand.NewSource(0)) //nolint:gosec
 	randomBigInt := new(big.Int).Rand(r, limit)
 
 	// Convert to scalar limbs and back

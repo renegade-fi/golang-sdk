@@ -1,4 +1,5 @@
-package api_types
+// Package api_types provides API data structures for the Renegade SDK
+package api_types //nolint:revive
 
 import (
 	"crypto/ecdsa"
@@ -14,25 +15,31 @@ import (
 // The number of u32 limbs in the serialized form of a secret share
 const secretShareLimbCount = 8 // 256 bits
 
+// Amount is a big.Int marshalled and unmarshalled as a rust-compatible string
 type Amount big.Int
 
+// NewAmount creates a new Amount from an int64
 func NewAmount(i int64) Amount {
 	return Amount(*big.NewInt(i))
 }
 
+// IsZero returns true if the amount is zero
 func (a *Amount) IsZero() bool {
 	return (*big.Int)(a).Sign() == 0
 }
 
+// String returns the string representation of the amount
 func (a *Amount) String() string {
 	return (*big.Int)(a).String()
 }
 
+// MarshalJSON marshals the amount to a JSON string
 func (a Amount) MarshalJSON() ([]byte, error) {
 	s := a.String()
 	return []byte(s), nil
 }
 
+// SetString sets the amount from a string
 func (a *Amount) SetString(s string, base int) error {
 	i, ok := new(big.Int).SetString(s, base)
 	if !ok {
@@ -42,31 +49,37 @@ func (a *Amount) SetString(s string, base int) error {
 	return nil
 }
 
+// UnmarshalJSON unmarshals the amount from a JSON string
 func (a *Amount) UnmarshalJSON(b []byte) error {
 	s := string(b)
 	return a.SetString(s, 10)
 }
 
+// Add adds two amounts
 func (a Amount) Add(b Amount) Amount {
 	sum := new(big.Int).Add((*big.Int)(&a), (*big.Int)(&b))
 	return Amount(*sum)
 }
 
+// Sub subtracts two amounts
 func (a Amount) Sub(b Amount) Amount {
 	diff := new(big.Int).Sub((*big.Int)(&a), (*big.Int)(&b))
 	return Amount(*diff)
 }
 
+// Mul multiplies two amounts
 func (a Amount) Mul(b Amount) Amount {
 	prod := new(big.Int).Mul((*big.Int)(&a), (*big.Int)(&b))
 	return Amount(*prod)
 }
 
+// Div divides two amounts
 func (a Amount) Div(b Amount) Amount {
 	quot := new(big.Int).Div((*big.Int)(&a), (*big.Int)(&b))
 	return Amount(*quot)
 }
 
+// Cmp compares two amounts
 func (a Amount) Cmp(b Amount) int {
 	return (*big.Int)(&a).Cmp((*big.Int)(&b))
 }
@@ -101,9 +114,9 @@ func orderSideToScalar(side string) (wallet.Scalar, error) {
 }
 
 // ApiOrder is an order in a Renegade wallet
-type ApiOrder struct {
+type ApiOrder struct { //nolint:revive
 	// The id of the order
-	Id uuid.UUID `json:"id"`
+	Id uuid.UUID `json:"id"` //nolint:revive
 	// The mint (erc20 address) of the base asset
 	// As a hex string
 	BaseMint string `json:"base_mint"`
@@ -162,7 +175,7 @@ func (a *ApiOrder) ToOrder(o *wallet.Order) error {
 }
 
 // ApiBalance is a balance in a Renegade wallet
-type ApiBalance struct {
+type ApiBalance struct { //nolint:revive
 	// The mint (erc20 address) of the asset
 	Mint string `json:"mint"`
 	// The amount of the asset
@@ -201,17 +214,18 @@ func (a *ApiBalance) ToBalance(b *wallet.Balance) error {
 
 // ApiFee is a fee in the Renegade system, due on a match, balance, etc
 // Contains both a relayer fee and a protocol fee
-type ApiFee struct {
+type ApiFee struct { //nolint:revive
 	RelayerFee  Amount `json:"relayer_fee"`
 	ProtocolFee Amount `json:"protocol_fee"`
 }
 
+// Total returns the total fee
 func (f *ApiFee) Total() Amount {
 	return f.RelayerFee.Add(f.ProtocolFee)
 }
 
 // ApiPublicKeychain is a public keychain in the Renegade system
-type ApiPublicKeychain struct {
+type ApiPublicKeychain struct { //nolint:revive
 	// The public root key of the wallet
 	// As a hex string
 	PkRoot string `json:"pk_root"`
@@ -220,6 +234,7 @@ type ApiPublicKeychain struct {
 	PkMatch string `json:"pk_match"`
 }
 
+// FromPublicKeychain converts a wallet.PublicKeychain to an ApiPublicKeychain
 func (a *ApiPublicKeychain) FromPublicKeychain(pk *wallet.PublicKeychain) error {
 	a.PkRoot = pk.PkRoot.ToHexString()
 	a.PkMatch = pk.PkMatch.ToHexString()
@@ -227,6 +242,7 @@ func (a *ApiPublicKeychain) FromPublicKeychain(pk *wallet.PublicKeychain) error 
 	return nil
 }
 
+// ToPublicKeychain converts an ApiPublicKeychain to a wallet.PublicKeychain
 func (a *ApiPublicKeychain) ToPublicKeychain() (*wallet.PublicKeychain, error) {
 	pkRoot, err := new(wallet.PublicSigningKey).FromHexString(a.PkRoot)
 	if err != nil {
@@ -244,7 +260,7 @@ func (a *ApiPublicKeychain) ToPublicKeychain() (*wallet.PublicKeychain, error) {
 }
 
 // ApiPrivateKeychain represents a private keychain for the API wallet
-type ApiPrivateKeychain struct {
+type ApiPrivateKeychain struct { //nolint:revive
 	// The private root key of the wallet
 	// As a hex string, optional
 	SkRoot *string `json:"sk_root,omitempty"`
@@ -302,7 +318,7 @@ func (a *ApiPrivateKeychain) ToPrivateKeychain() (*wallet.PrivateKeychain, error
 }
 
 // ApiKeychain represents a keychain API type that maintains all keys as hex strings
-type ApiKeychain struct {
+type ApiKeychain struct { //nolint:revive
 	// The public keychain
 	PublicKeys ApiPublicKeychain `json:"public_keys"`
 	// The private keychain
@@ -346,9 +362,9 @@ func (a *ApiKeychain) ToKeychain() (*wallet.Keychain, error) {
 }
 
 // ApiWallet is a wallet in the Renegade system
-type ApiWallet struct {
+type ApiWallet struct { //nolint: revive
 	// Identifier
-	Id uuid.UUID `json:"id"`
+	Id uuid.UUID `json:"id"` //nolint: revive
 	// The orders maintained by this wallet
 	Orders []ApiOrder `json:"orders"`
 	// The balances maintained by the wallet to cover orders
@@ -370,6 +386,7 @@ type ApiWallet struct {
 	Blinder [secretShareLimbCount]uint32 `json:"blinder"`
 }
 
+// FromWallet converts a wallet.Wallet to an ApiWallet
 func (a *ApiWallet) FromWallet(w *wallet.Wallet) (*ApiWallet, error) {
 	a.Id = w.Id
 

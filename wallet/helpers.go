@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"github.com/consensys/gnark-crypto/ecc/bn254/fr"
+
 	renegade_crypto "github.com/renegade-fi/golang-sdk/crypto"
 )
 

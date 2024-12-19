@@ -13,7 +13,7 @@ const precisionTolerance = 1e-10
 // TestFixedPoint tests the fixed point implementation
 func TestFixedPoint(t *testing.T) {
 	// Generate a random float64 between 0 and 1000
-	originalFloat := rand.Float64() * 1000
+	originalFloat := rand.Float64() * 1000 //nolint:gosec
 
 	// Convert to and from FixedPoint
 	fixedPoint := FixedPointFromFloat(originalFloat)

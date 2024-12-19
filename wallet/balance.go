@@ -1,3 +1,4 @@
+// Package wallet provides a wallet for the Renegade system
 package wallet
 
 import (

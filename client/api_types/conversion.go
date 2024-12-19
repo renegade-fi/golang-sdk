@@ -1,4 +1,4 @@
-package api_types
+package api_types //nolint:revive
 
 import (
 	"math/big"
@@ -12,7 +12,7 @@ func ScalarToUintLimbs(s wallet.Scalar) ScalarLimbs {
 	limbs := [secretShareLimbCount]uint32{}
 	for i := 0; i < secretShareLimbCount; i++ {
 		if bigint.BitLen() > 0 {
-			limbs[i] = uint32(bigint.Uint64())
+			limbs[i] = uint32(bigint.Uint64()) //nolint:gosec
 			bigint.Rsh(bigint, 32)
 		} else {
 			break

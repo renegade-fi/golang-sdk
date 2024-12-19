@@ -16,9 +16,9 @@ import (
 const (
 	// numScalarsWalletShare is the number of scalars in a wallet share
 	numScalarsWalletShare = 70
-	// maxBalances is the maximum number of balances in a wallet
+	// MaxBalances is the maximum number of balances in a wallet
 	MaxBalances = 10
-	// maxOrders is the maximum number of orders in a wallet
+	// MaxOrders is the maximum number of orders in a wallet
 	MaxOrders = 4
 )
 
@@ -123,7 +123,7 @@ func (s *Scalar) FromLittleEndianBytes(bytes [fr.Bytes]byte) (*Scalar, error) {
 	return s, nil
 }
 
-// HexString returns the hex string representation of the scalar
+// ToHexString returns the hex string representation of the scalar
 func (s *Scalar) ToHexString() string {
 	bytes := s.ToBigInt().Bytes()
 	return hex.EncodeToString(bytes[:])
@@ -158,9 +158,9 @@ func (s *Scalar) FromBigInt(i *big.Int) Scalar {
 }
 
 // WalletSecrets contains the information about a wallet necessary to recover it
-type WalletSecrets struct {
+type WalletSecrets struct { //nolint:revive
 	// Id is the UUID of the wallet
-	Id uuid.UUID
+	Id uuid.UUID //nolint:revive
 	// Address is the Ethereum address of the wallet
 	Address string
 	// Keychain is the keychain used to manage the wallet
@@ -172,10 +172,10 @@ type WalletSecrets struct {
 }
 
 // DeriveWalletSecrets derives the wallet secrets from the given Ethereum private key
-func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecrets, error) {
+func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecrets, error) { //nolint:revive
 	address := crypto.PubkeyToAddress(ethKey.PublicKey).Hex()
 
-	walletId, err := DeriveWalletID(ethKey, chainId)
+	walletId, err := DeriveWalletID(ethKey, chainId) //nolint:revive
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func DeriveWalletSecrets(ethKey *ecdsa.PrivateKey, chainId uint64) (*WalletSecre
 
 // WalletShare represents a secret share of a wallet, containing only the
 // elements of a wallet that are stored on-chain
-type WalletShare struct {
+type WalletShare struct { //nolint:revive
 	// Balances are the balances of the wallet
 	Balances [MaxBalances]Balance
 	// Orders are the orders of the wallet
@@ -237,7 +237,7 @@ func EmptyWalletShare(publicKeys PublicKeychain) (WalletShare, error) {
 	return share, nil
 }
 
-// SplitIntoShares splits a wallet share into two shares using the given private
+// SplitPublicPrivate splits a wallet share into two shares using the given private
 // shares and blinder
 func (ws *WalletShare) SplitPublicPrivate(
 	privateShares []Scalar,
@@ -314,7 +314,7 @@ func CombineShares(
 
 // Wallet is a wallet in the Renegade system
 type Wallet struct {
-	Id                  uuid.UUID
+	Id                  uuid.UUID //nolint:revive
 	Orders              []Order
 	Balances            []Balance
 	Keychain            *Keychain
@@ -326,8 +326,8 @@ type Wallet struct {
 }
 
 // NewEmptyWallet creates a new empty wallet
-func NewEmptyWallet(privateKey *ecdsa.PrivateKey, chainId uint64) (*Wallet, error) {
-	secrets, err := DeriveWalletSecrets(privateKey, chainId)
+func NewEmptyWallet(privateKey *ecdsa.PrivateKey, chainID uint64) (*Wallet, error) {
+	secrets, err := DeriveWalletSecrets(privateKey, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,7 @@ func NewEmptyWallet(privateKey *ecdsa.PrivateKey, chainId uint64) (*Wallet, erro
 
 // NewEmptyWalletFromSecrets creates a new wallet from the given wallet secrets
 func NewEmptyWalletFromSecrets(secrets *WalletSecrets) (*Wallet, error) {
-	walletId := secrets.Id
+	walletID := secrets.Id
 	keychain := secrets.Keychain
 
 	// Setup a wallet with empty shares
@@ -359,7 +359,7 @@ func NewEmptyWalletFromSecrets(secrets *WalletSecrets) (*Wallet, error) {
 	publicShare.Blinder = blinder.Sub(blinderPrivateShare)
 
 	return &Wallet{
-		Id:       walletId,
+		Id:       walletID,
 		Orders:   make([]Order, 0),
 		Balances: make([]Balance, 0),
 		Keychain: keychain,

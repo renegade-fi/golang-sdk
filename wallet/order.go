@@ -12,12 +12,19 @@ import (
 type OrderSide int
 
 const (
+	// Buy is the buy side of an order
 	Buy OrderSide = iota
+	// Sell is the sell side of an order
 	Sell
 )
-const OrderSide_BUY = 0
-const OrderSide_SELL = 1
 
+// OrderSide_BUY is a buy side order
+const OrderSide_BUY = 0 //nolint:revive
+
+// OrderSide_SELL is a sell side order
+const OrderSide_SELL = 1 //nolint:revive
+
+// FromScalars converts a slice of scalars to an OrderSide
 func (s *OrderSide) FromScalars(scalars *ScalarIterator) error {
 	scalar, err := scalars.Next()
 	if err != nil {
@@ -29,15 +36,17 @@ func (s *OrderSide) FromScalars(scalars *ScalarIterator) error {
 		return fmt.Errorf("invalid OrderSide value: %v", scalar)
 	}
 
-	*s = OrderSide(elt.Uint64())
+	*s = OrderSide(elt.Uint64()) //nolint:gosec
 	return nil
 }
 
+// ToScalars converts an OrderSide to a slice of scalars
 func (s *OrderSide) ToScalars() ([]Scalar, error) {
-	elt := fr.NewElement(uint64(*s))
+	elt := fr.NewElement(uint64(*s)) //nolint:gosec
 	return []Scalar{Scalar(elt)}, nil
 }
 
+// NumScalars returns the number of scalars in the OrderSide
 func (s *OrderSide) NumScalars() int {
 	return 1
 }
@@ -45,7 +54,7 @@ func (s *OrderSide) NumScalars() int {
 // Order is an order in the Renegade system
 type Order struct {
 	// ID is the id of the order
-	Id uuid.UUID `scalar_serialize:"skip"`
+	Id uuid.UUID `scalar_serialize:"skip"` //nolint:revive
 	// QuoteMint is the erc20 address of the quote asset
 	QuoteMint Scalar
 	// BaseMint is the erc20 address of the base asset
@@ -70,7 +79,7 @@ func NewOrderBuilder() *OrderBuilder {
 }
 
 // WithId sets the Id
-func (ob *OrderBuilder) WithId(id uuid.UUID) *OrderBuilder {
+func (ob *OrderBuilder) WithId(id uuid.UUID) *OrderBuilder { //nolint:revive
 	ob.order.Id = id
 	return ob
 }
@@ -137,7 +146,7 @@ func (ob *OrderBuilder) Build() Order {
 	return ob.order
 }
 
-// Update NewEmptyOrder to use the builder
+// NewEmptyOrder creates a new empty order
 func NewEmptyOrder() Order {
 	id := uuid.New()
 	return Order{
@@ -150,7 +159,7 @@ func NewEmptyOrder() Order {
 	}
 }
 
-// Add a new function to create an order with some default values
+// NewOrder creates a new order
 func NewOrder(
 	quoteMint Scalar,
 	baseMint Scalar,
@@ -212,9 +221,9 @@ func (w *Wallet) findReplaceableOrder() int {
 }
 
 // CancelOrder cancels an order by ID
-func (w *Wallet) CancelOrder(orderId uuid.UUID) error {
+func (w *Wallet) CancelOrder(orderID uuid.UUID) error {
 	// Find the order to cancel
-	idx := w.findOrder(orderId)
+	idx := w.findOrder(orderID)
 	if idx == -1 {
 		return fmt.Errorf("order not found")
 	}
@@ -225,9 +234,9 @@ func (w *Wallet) CancelOrder(orderId uuid.UUID) error {
 }
 
 // findOrder finds the index of an order with the given ID, or -1 if no order has the given ID
-func (w *Wallet) findOrder(orderId uuid.UUID) int {
+func (w *Wallet) findOrder(orderID uuid.UUID) int {
 	for i, order := range w.Orders {
-		if order.Id == orderId {
+		if order.Id == orderID {
 			return i
 		}
 	}

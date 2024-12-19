@@ -8,7 +8,7 @@ import (
 )
 
 // LARGE_TEST_VECTOR is a large random vector for testing purposes
-var LARGE_TEST_VECTOR = []string{
+var largeTestVector = []string{
 	"19230904647065636396038552256938968853322683750200788848331370785095198876878",
 	"15911637536990531499916323601087363308229536839479434470684150236988586364318",
 	"19564613450635237900605484014415855639638711726565938233242326595431025719394",
@@ -114,7 +114,7 @@ var LARGE_TEST_VECTOR = []string{
 // LARGE_TEST_VECTOR_HASH is the expected hash output for LARGE_TEST_VECTOR
 //
 //nolint:lll
-var LARGE_TEST_VECTOR_HASH = "7043431630205359021101812166882265280337929418769865370612041462630759989210"
+var largeTestVectorHash = "7043431630205359021101812166882265280337929418769865370612041462630759989210"
 
 func feltFromString(s string) fr.Element {
 	var felt fr.Element
@@ -211,8 +211,8 @@ func TestPoseidon2Sponge_ErrorHandling(t *testing.T) {
 
 func TestPoseidon2Sponge_LargeVector(t *testing.T) {
 	// Convert the test vector to a slice of `fr.Element`
-	input := make([]fr.Element, len(LARGE_TEST_VECTOR))
-	for i, s := range LARGE_TEST_VECTOR {
+	input := make([]fr.Element, len(largeTestVector))
+	for i, s := range largeTestVector {
 		input[i] = feltFromString(s)
 	}
 
@@ -221,7 +221,7 @@ func TestPoseidon2Sponge_LargeVector(t *testing.T) {
 	result := sponge.Hash(input)
 
 	assert.Equal(t,
-		LARGE_TEST_VECTOR_HASH,
+		largeTestVectorHash,
 		result.String(),
 		"Hash result for large test vector mismatch",
 	)

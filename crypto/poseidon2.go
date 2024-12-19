@@ -1,3 +1,4 @@
+// Package crypto provides cryptographic primitives for the Renegade SDK
 package crypto
 
 import (
@@ -25,7 +26,7 @@ func (p *PoseidonCSPRNG) Next() fr.Element {
 	return hashRes
 }
 
-// Return the next n scalars in the CSPRNG
+// NextN returns the next n scalars in the CSPRNG
 func (p *PoseidonCSPRNG) NextN(n int) []fr.Element {
 	result := make([]fr.Element, n)
 	for i := 0; i < n; i++ {
@@ -57,7 +58,7 @@ func NewPoseidon2Sponge() *Poseidon2Sponge {
 
 // Hash hashes the given input and returns a single-squeeze
 func (p *Poseidon2Sponge) Hash(seq []fr.Element) fr.Element {
-	//nolint:errcheck
+	//nolint:errcheck,gosec
 	p.AbsorbBatch(seq)
 	return p.Squeeze()
 }
@@ -138,7 +139,7 @@ func (p *Poseidon2Sponge) externalRound(roundNumber int) {
 
 // externalAddRC adds a round constant to the state in an external round
 func (p *Poseidon2Sponge) externalAddRC(roundNumber int) {
-	rc := FULL_ROUND_CONSTANTS[roundNumber]
+	rc := fullRoundConstants[roundNumber]
 	for i := range p.state {
 		p.state[i].Add(&p.state[i], &rc[i])
 	}
@@ -172,7 +173,7 @@ func (p *Poseidon2Sponge) internalRound(roundNumber int) {
 
 // internalAddRC adds a round constant to the first state element in an internal round
 func (p *Poseidon2Sponge) internalAddRC(roundNumber int) {
-	rc := PARTIAL_ROUND_CONSTANTS[roundNumber]
+	rc := partialRoundConstants[roundNumber]
 	p.state[0].Add(&p.state[0], &rc)
 }
 

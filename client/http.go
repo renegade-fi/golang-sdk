@@ -1,3 +1,4 @@
+// Package client provides a client for the renegade API
 package client
 
 import (
@@ -28,14 +29,14 @@ const (
 )
 
 // HttpClient represents an HTTP client with a base URL and auth key
-type HttpClient struct {
+type HttpClient struct { //nolint:revive
 	baseURL    string
 	httpClient *http.Client
 	authKey    *wallet.HmacKey
 }
 
 // NewHttpClient creates a new HttpClient with the given base URL and auth key
-func NewHttpClient(baseURL string, authKey *wallet.HmacKey) *HttpClient {
+func NewHttpClient(baseURL string, authKey *wallet.HmacKey) *HttpClient { //nolint:revive
 	return &HttpClient{
 		baseURL:    baseURL,
 		httpClient: &http.Client{},
@@ -175,6 +176,7 @@ func (c *HttpClient) doRequestWithStatus(
 	if err != nil {
 		return 0, nil, fmt.Errorf("failed to send request: %w", err)
 	}
+	//nolint:errcheck
 	defer resp.Body.Close()
 
 	// Read and check the response
@@ -200,7 +202,7 @@ func (c *HttpClient) addAuth(req *http.Request, bodyBytes []byte) {
 	// Compute the expiration time
 	expiration := time.Now().Add(signatureExpiration * time.Second).UnixMilli()
 	expirationBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(expirationBytes, uint64(expiration))
+	binary.LittleEndian.PutUint64(expirationBytes, uint64(expiration)) //nolint:gosec
 	req.Header.Set(expirationHeader, strconv.FormatInt(expiration, 10))
 
 	// Create the hmac

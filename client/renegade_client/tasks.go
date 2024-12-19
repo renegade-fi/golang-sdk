@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 )
 
@@ -19,8 +20,8 @@ const (
 
 // getTaskHistory gets the task history for a given wallet
 func (c *RenegadeClient) getTaskHistory() ([]api_types.ApiHistoricalTask, error) {
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildTaskHistoryPath(walletId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildTaskHistoryPath(walletID)
 	resp := api_types.TaskHistoryResponse{}
 	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
 	if err != nil {
@@ -31,7 +32,7 @@ func (c *RenegadeClient) getTaskHistory() ([]api_types.ApiHistoricalTask, error)
 }
 
 // getTask gets a task by id
-func (c *RenegadeClient) getTaskStatusFromHistory(taskId uuid.UUID) (string, error) {
+func (c *RenegadeClient) getTaskStatusFromHistory(taskID uuid.UUID) (string, error) {
 	tasks, err := c.getTaskHistory()
 	if err != nil {
 		return "", err
@@ -39,7 +40,7 @@ func (c *RenegadeClient) getTaskStatusFromHistory(taskId uuid.UUID) (string, err
 
 	// Find the task
 	for _, task := range tasks {
-		if task.Id == taskId {
+		if task.Id == taskID {
 			return task.State, nil
 		}
 	}
@@ -48,14 +49,14 @@ func (c *RenegadeClient) getTaskStatusFromHistory(taskId uuid.UUID) (string, err
 }
 
 // getTaskStatusDirect gets the status of a task directly from the task endpoint
-func (c *RenegadeClient) getTaskStatusDirect(taskId uuid.UUID) (string, error) {
-	path := api_types.BuildTaskStatusPath(taskId)
+func (c *RenegadeClient) getTaskStatusDirect(taskID uuid.UUID) (string, error) {
+	path := api_types.BuildTaskStatusPath(taskID)
 	resp := api_types.TaskResponse{}
 	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
 
 	// If the task is no longer registered, check task history
 	if err != nil && strings.Contains(err.Error(), "task not found") {
-		return c.getTaskStatusFromHistory(taskId)
+		return c.getTaskStatusFromHistory(taskID)
 	}
 
 	if err != nil {
@@ -66,20 +67,19 @@ func (c *RenegadeClient) getTaskStatusDirect(taskId uuid.UUID) (string, error) {
 }
 
 // getTaskStatus gets the status of a task by looking up the task in the task history
-func (c *RenegadeClient) getTaskStatus(taskId uuid.UUID, direct bool) (string, error) {
+func (c *RenegadeClient) getTaskStatus(taskID uuid.UUID, direct bool) (string, error) {
 	if direct {
-		return c.getTaskStatusDirect(taskId)
-	} else {
-		return c.getTaskStatusFromHistory(taskId)
+		return c.getTaskStatusDirect(taskID)
 	}
+	return c.getTaskStatusFromHistory(taskID)
 }
 
 // waitForTaskGeneric waits for a task to complete or until the timeout is reached
-func (c *RenegadeClient) waitForTaskGeneric(taskId uuid.UUID, direct bool) error {
-	log.Printf("waiting for task %s to complete", taskId)
+func (c *RenegadeClient) waitForTaskGeneric(taskID uuid.UUID, direct bool) error {
+	log.Printf("waiting for task %s to complete", taskID)
 	deadline := time.Now().Add(taskTimeout)
 	for time.Now().Before(deadline) {
-		state, err := c.getTaskStatus(taskId, direct)
+		state, err := c.getTaskStatus(taskID, direct)
 		if err != nil {
 			return err
 		}
@@ -87,10 +87,10 @@ func (c *RenegadeClient) waitForTaskGeneric(taskId uuid.UUID, direct bool) error
 		// Check for completion or failure
 		state = strings.ToLower(state)
 		if state == taskCompletedStatus {
-			log.Printf("task %s completed", taskId)
+			log.Printf("task %s completed", taskID)
 			return nil
 		} else if state == taskFailedStatus {
-			log.Printf("task %s failed", taskId)
+			log.Printf("task %s failed", taskID)
 			return fmt.Errorf("task failed")
 		}
 
@@ -101,11 +101,11 @@ func (c *RenegadeClient) waitForTaskGeneric(taskId uuid.UUID, direct bool) error
 }
 
 // waitForTask waits for a task to complete or until the timeout is reached
-func (c *RenegadeClient) waitForTask(taskId uuid.UUID) error {
-	return c.waitForTaskGeneric(taskId, false /* direct */)
+func (c *RenegadeClient) waitForTask(taskID uuid.UUID) error {
+	return c.waitForTaskGeneric(taskID, false /* direct */)
 }
 
 // waitForTaskWithDirect waits for a task to complete or until the timeout is reached
-func (c *RenegadeClient) waitForTaskDirect(taskId uuid.UUID) error {
-	return c.waitForTaskGeneric(taskId, true /* direct */)
+func (c *RenegadeClient) waitForTaskDirect(taskID uuid.UUID) error {
+	return c.waitForTaskGeneric(taskID, true /* direct */)
 }

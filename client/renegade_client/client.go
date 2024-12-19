@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/google/uuid"
+
 	"github.com/renegade-fi/golang-sdk/client"
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	"github.com/renegade-fi/golang-sdk/wallet"
@@ -23,10 +24,11 @@ type ChainConfig struct {
 	// DarkpoolAddress is the address of the Darkpool contract
 	DarkpoolAddress string
 	// EthereumRpcUrl is the URL of the Ethereum RPC
-	EthereumRpcUrl string
+	EthereumRpcUrl string //nolint:revive
 }
 
 var (
+	// ArbitrumOneConfig is the configuration for the Arbitrum One chain
 	ArbitrumOneConfig = ChainConfig{
 		ChainID:         42161,
 		Permit2Address:  "0x000000000022D473030F116dDEE9F6B43aC78BA3",
@@ -34,6 +36,7 @@ var (
 		EthereumRpcUrl:  "https://arb1.arbitrum.io/rpc",
 	}
 
+	// ArbitrumSepoliaConfig is the configuration for the Arbitrum Sepolia chain
 	ArbitrumSepoliaConfig = ChainConfig{
 		ChainID:         421614,
 		Permit2Address:  "0x9458198bcc289c42e460cb8ca143e5854f734442",
@@ -295,7 +298,7 @@ func (c *RenegadeClient) PlaceOrder(order *wallet.Order) (*wallet.Wallet, error)
 // Returns:
 //   - *api_types.CancelOrderResponse: Contains the task ID and the canceled order if successful.
 //   - error: An error if the order cancellation fails, nil otherwise.
-func (c *RenegadeClient) CancelOrder(orderId uuid.UUID) (*wallet.Wallet, error) {
+func (c *RenegadeClient) CancelOrder(orderId uuid.UUID) (*wallet.Wallet, error) { //nolint:revive
 	if err := c.cancelOrder(orderId, true /* blocking */); err != nil {
 		return nil, err
 	}
@@ -326,7 +329,7 @@ func getWalletUpdateAuth(wallet *wallet.Wallet) (*api_types.WalletUpdateAuthoriz
 }
 
 // createRpcClient creates a new RPC client
-func (c *RenegadeClient) createRpcClient() (*ethclient.Client, error) {
+func (c *RenegadeClient) createRpcClient() (*ethclient.Client, error) { //nolint:revive
 	return ethclient.Dial(c.chainConfig.EthereumRpcUrl)
 }
 
@@ -334,7 +337,7 @@ func (c *RenegadeClient) createRpcClient() (*ethclient.Client, error) {
 func (c *RenegadeClient) createTransactor(
 	ethPrivateKey *ecdsa.PrivateKey,
 ) (*bind.TransactOpts, error) {
-	chainID := big.NewInt(int64(c.chainConfig.ChainID))
+	chainID := big.NewInt(int64(c.chainConfig.ChainID)) //nolint:gosec
 	auth, err := bind.NewKeyedTransactorWithChainID(ethPrivateKey, chainID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create transactor: %w", err)

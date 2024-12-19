@@ -90,6 +90,7 @@ func scalarLimbsToBigInt(limbs []Scalar) *big.Int {
 	return b
 }
 
+// ToScalars converts the public key to a slice of scalars
 func (pk *PublicSigningKey) ToScalars() ([]Scalar, error) {
 	xScalars := bigintToScalarLimbs(*pk.X)
 	yScalars := bigintToScalarLimbs(*pk.Y)
@@ -108,6 +109,7 @@ func (pk *PublicSigningKey) ToScalars() ([]Scalar, error) {
 	return []Scalar{xScalars[0], xScalars[1], yScalars[0], yScalars[1]}, nil
 }
 
+// FromScalars converts a slice of scalars to a public key
 func (pk *PublicSigningKey) FromScalars(scalars *ScalarIterator) error {
 	xScalars := make([]Scalar, 2)
 	yScalars := make([]Scalar, 2)
@@ -134,6 +136,7 @@ func (pk *PublicSigningKey) FromScalars(scalars *ScalarIterator) error {
 	return nil
 }
 
+// NumScalars returns the number of scalars in the public key
 func (pk *PublicSigningKey) NumScalars() int {
 	return 4
 }
@@ -159,13 +162,16 @@ func (pk *PublicSigningKey) FromHexString(hexString string) (PublicSigningKey, e
 	return *pk, nil
 }
 
+// PrivateSigningKey is a private key over the secp256k1 curve
 type PrivateSigningKey ecdsa.PrivateKey
 
+// ToScalars converts the private key to a slice of scalars
 func (pk *PrivateSigningKey) ToScalars() ([]Scalar, error) {
 	limbs := bigintToScalarLimbs(*pk.D)
 	return limbs, nil
 }
 
+// FromScalars converts a slice of scalars to a private key
 func (pk *PrivateSigningKey) FromScalars(scalars *ScalarIterator) error {
 	d, err := scalars.Next()
 	if err != nil {
@@ -175,6 +181,7 @@ func (pk *PrivateSigningKey) FromScalars(scalars *ScalarIterator) error {
 	return nil
 }
 
+// NumScalars returns the number of scalars in the private key
 func (pk *PrivateSigningKey) NumScalars() int {
 	return 2
 }
@@ -244,9 +251,9 @@ func (pk *FeeEncryptionKey) FromBytes(bytes []byte) error {
 	var yBytes [fr.Bytes]byte
 	copy(xBytes[:], bytes[:fr.Bytes])
 	copy(yBytes[:], bytes[fr.Bytes:])
-	//nolint:errcheck
+	//nolint:errcheck,gosec
 	pk.X.FromLittleEndianBytes(xBytes)
-	//nolint:errcheck
+	//nolint:errcheck,gosec
 	pk.Y.FromLittleEndianBytes(yBytes)
 	return nil
 }

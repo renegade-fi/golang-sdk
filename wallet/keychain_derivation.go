@@ -34,16 +34,16 @@ const (
 	shareSeedMessage = "share seed"
 
 	// walletIdMessage is the message used to derive the wallet ID
-	walletIdMessage = "wallet id"
+	walletIDMessage = "wallet id"
 
 	// walletIdNumBytes is the number of bytes in the wallet ID
-	walletIdNumBytes = 16
+	walletIDNumBytes = 16
 )
 
 // DeriveKeychain derives the keychain from the private key
-func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*Keychain, error) {
+func DeriveKeychain(pkey *ecdsa.PrivateKey, chainID uint64) (*Keychain, error) {
 	// Create the derivation key
-	derivationKey, err := createDerivationKey(pkey, chainId)
+	derivationKey, err := createDerivationKey(pkey, chainID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,13 +71,13 @@ func DeriveKeychain(pkey *ecdsa.PrivateKey, chainId uint64) (*Keychain, error) {
 }
 
 // DeriveWalletSeeds derives the blinder and secret share seeds from the derivation key
-func DeriveWalletSeeds(privateKey *ecdsa.PrivateKey, chainId uint64) (
+func DeriveWalletSeeds(privateKey *ecdsa.PrivateKey, chainID uint64) (
 	blinderSeed,
 	shareSeed Scalar,
 	err error,
 ) {
 	// Create the derivation key
-	derivationKey, err := createDerivationKey(privateKey, chainId)
+	derivationKey, err := createDerivationKey(privateKey, chainID)
 	if err != nil {
 		return Scalar{}, Scalar{}, err
 	}
@@ -96,26 +96,26 @@ func DeriveWalletSeeds(privateKey *ecdsa.PrivateKey, chainId uint64) (
 }
 
 // DeriveWalletID derives the wallet ID from the private key
-func DeriveWalletID(privateKey *ecdsa.PrivateKey, chainId uint64) (uuid.UUID, error) {
+func DeriveWalletID(privateKey *ecdsa.PrivateKey, chainID uint64) (uuid.UUID, error) {
 	// Create the derivation key
-	derivationKey, err := createDerivationKey(privateKey, chainId)
+	derivationKey, err := createDerivationKey(privateKey, chainID)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
 	// Derive the wallet ID
-	walletIdBytes, err := getExtendedSigBytes([]byte(walletIdMessage), derivationKey)
+	walletIDBytes, err := getExtendedSigBytes([]byte(walletIDMessage), derivationKey)
 	if err != nil {
 		return uuid.Nil, err
 	}
 
 	// Convert the bytes to a UUID
-	walletId, err := uuid.FromBytes(walletIdBytes[:walletIdNumBytes])
+	walletID, err := uuid.FromBytes(walletIDBytes[:walletIDNumBytes])
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to create UUID from bytes: %v", err)
 	}
 
-	return walletId, nil
+	return walletID, nil
 
 }
 
@@ -142,8 +142,8 @@ func createKeychain(skRoot *ecdsa.PrivateKey, skMatch Scalar, symmetricKey HmacK
 }
 
 // createDerivationKey creates a new private key from the signature
-func createDerivationKey(pkey *ecdsa.PrivateKey, chainId uint64) (*ecdsa.PrivateKey, error) {
-	message := []byte(fmt.Sprintf("%s%d", derivationKeyMessage, chainId))
+func createDerivationKey(pkey *ecdsa.PrivateKey, chainID uint64) (*ecdsa.PrivateKey, error) {
+	message := []byte(fmt.Sprintf("%s%d", derivationKeyMessage, chainID))
 	keyBytes, err := getExtendedSigBytes(message, pkey)
 	if err != nil {
 		return nil, err

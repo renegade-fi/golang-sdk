@@ -1,3 +1,4 @@
+// Package client provides a client for the renegade API
 package client
 
 import (
@@ -53,8 +54,8 @@ func (c *RenegadeClient) deposit(
 	req.WalletUpdateAuthorization = *auth
 
 	// Post the deposit to the relayer
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildDepositPath(walletId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildDepositPath(walletID)
 
 	resp := api_types.DepositResponse{}
 	err = c.httpClient.PostWithAuth(path, req, &resp)
@@ -258,8 +259,8 @@ func (c *RenegadeClient) generatePermit2Signature(
 ) (*PermitWitnessTransferFrom, []byte, error) {
 	// Construct the EIP712 domain
 	permit2Address := common.HexToAddress(c.chainConfig.Permit2Address)
-	chainId := big.NewInt(int64(c.chainConfig.ChainID))
-	domain := ConstructEIP712Domain(chainId, permit2Address)
+	chainID := big.NewInt(int64(c.chainConfig.ChainID)) //nolint:gosec
+	domain := ConstructEIP712Domain(chainID, permit2Address)
 
 	// Create the TokenPermissions struct
 	tokenPermissions := abis.ISignatureTransferTokenPermissions{

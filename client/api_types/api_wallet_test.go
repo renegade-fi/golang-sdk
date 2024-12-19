@@ -1,4 +1,4 @@
-package api_types
+package api_types //nolint:revive
 
 import (
 	"crypto/ecdsa"
@@ -6,8 +6,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-	"github.com/renegade-fi/golang-sdk/wallet"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/renegade-fi/golang-sdk/wallet"
 )
 
 func TestApiWalletConversion(t *testing.T) {

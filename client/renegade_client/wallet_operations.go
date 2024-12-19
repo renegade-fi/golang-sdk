@@ -7,8 +7,8 @@ import (
 
 // getWallet retrieves a wallet from the relayer
 func (c *RenegadeClient) getWallet() (*wallet.Wallet, error) {
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildGetWalletPath(walletId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildGetWalletPath(walletID)
 
 	resp := api_types.GetWalletResponse{}
 	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
@@ -27,8 +27,8 @@ func (c *RenegadeClient) getWallet() (*wallet.Wallet, error) {
 
 // getBackOfQueueWallet retrieves the wallet at the back of the processing queue from the relayer
 func (c *RenegadeClient) getBackOfQueueWallet() (*wallet.Wallet, error) {
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildBackOfQueueWalletPath(walletId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildBackOfQueueWalletPath(walletID)
 
 	resp := api_types.GetWalletResponse{}
 	err := c.httpClient.GetWithAuth(path, nil /* body */, &resp)
@@ -63,7 +63,7 @@ func (c *RenegadeClient) getBackOfQueueWallet() (*wallet.Wallet, error) {
 // share seed, and private keychain (excluding the root key). It then sends a POST
 // request to the relayer and returns the response.
 func (c *RenegadeClient) lookupWallet(blocking bool) error {
-	walletId := c.walletSecrets.Id
+	walletID := c.walletSecrets.Id
 	path := api_types.LookupWalletPath
 
 	// Build the request
@@ -77,7 +77,7 @@ func (c *RenegadeClient) lookupWallet(blocking bool) error {
 	blinderSeed := api_types.ScalarToUintLimbs(c.walletSecrets.BlinderSeed)
 	shareSeed := api_types.ScalarToUintLimbs(c.walletSecrets.ShareSeed)
 	request := api_types.LookupWalletRequest{
-		WalletId:        walletId,
+		WalletId:        walletID,
 		BlinderSeed:     blinderSeed,
 		ShareSeed:       shareSeed,
 		PrivateKeychain: *keys,
@@ -117,8 +117,8 @@ func (c *RenegadeClient) lookupWallet(blocking bool) error {
 // to the relayer. If successful, it returns the response containing the task ID for tracking
 // the refresh operation.
 func (c *RenegadeClient) refreshWallet(blocking bool) error {
-	walletId := c.walletSecrets.Id
-	path := api_types.BuildRefreshWalletPath(walletId)
+	walletID := c.walletSecrets.Id
+	path := api_types.BuildRefreshWalletPath(walletID)
 
 	resp := api_types.RefreshWalletResponse{}
 	err := c.httpClient.PostWithAuth(path, nil, &resp)

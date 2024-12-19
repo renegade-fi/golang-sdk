@@ -9,6 +9,7 @@ import (
 	"github.com/renegade-fi/golang-sdk/abis"
 )
 
+// PermitWitnessTransferFrom is the permit for the deposit
 type PermitWitnessTransferFrom struct {
 	Permitted abis.ISignatureTransferTokenPermissions
 	Spender   common.Address
@@ -23,19 +24,20 @@ type DepositWitness struct {
 	PkRoot [4]*big.Int
 }
 
-const PERMIT2_EIP712_DOMAIN_NAME = "Permit2"
+const permit2EIP712DomainName = "Permit2"
 
+// EIP712Domain is the domain for the permit
 type EIP712Domain struct {
 	Name              string
-	ChainId           *big.Int
+	ChainId           *big.Int //nolint:revive
 	VerifyingContract common.Address
 }
 
 // ConstructEIP712Domain constructs an EIP712Domain
-func ConstructEIP712Domain(chainId *big.Int, verifyingContract common.Address) EIP712Domain {
+func ConstructEIP712Domain(chainID *big.Int, verifyingContract common.Address) EIP712Domain {
 	return EIP712Domain{
-		Name:              PERMIT2_EIP712_DOMAIN_NAME,
-		ChainId:           chainId,
+		Name:              permit2EIP712DomainName,
+		ChainId:           chainID,
 		VerifyingContract: verifyingContract,
 	}
 }

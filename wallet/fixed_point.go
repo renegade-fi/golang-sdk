@@ -28,7 +28,7 @@ func NewFixedPoint(repr Scalar) FixedPoint {
 	return FixedPoint{Repr: repr}
 }
 
-// FromFloat creates a new fixed point number from a float
+// FixedPointFromFloat creates a new fixed point number from a float
 func FixedPointFromFloat(f float64) FixedPoint {
 	bigF := big.NewFloat(f)
 	// Shift left by precisionBits
@@ -59,7 +59,7 @@ func (fp FixedPoint) ToFloat() float64 {
 	return f
 }
 
-// ToDecimalString converts a fixed point number to the base10 string representation of its `repr`
+// ToReprDecimalString converts a fixed point number to the base10 string representation of its `repr`
 func (fp FixedPoint) ToReprDecimalString() string {
 	reprBigint := fp.Repr.ToBigInt()
 

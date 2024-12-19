@@ -1,4 +1,4 @@
-package api_types
+package api_types //nolint:revive
 
 import (
 	"fmt"
@@ -6,8 +6,10 @@ import (
 	"github.com/google/uuid"
 )
 
+//nolint:revive
 const (
 	// --- Orderbook Endpoints --- //
+	// GetSupportedTokensPath is the path for the GetSupportedTokens action
 	GetSupportedTokensPath = "/v0/supported-tokens"
 
 	// --- Wallet Endpoints --- //
@@ -17,7 +19,7 @@ const (
 	// in its queue have been processed
 	BackOfQueueWalletPath = "/v0/wallet/%s/back-of-queue"
 	// LookupWalletPath is the path for the LookupWallet action
-	LookupWalletPath = "/v0/wallet/lookup"
+	LookupWalletPath = "/v0/wallet/lookup" //nolint:gosec
 	// RefreshWalletPath is the path for the RefreshWallet action
 	RefreshWalletPath = "/v0/wallet/%s/refresh"
 	// CreateWalletPath is the path for the CreateWallet action
@@ -46,6 +48,7 @@ const (
 	AssembleExternalQuotePath = "/v0/matching-engine/assemble-external-match"
 )
 
+// ScalarLimbs is an array of uint32 limbs
 type ScalarLimbs [secretShareLimbCount]uint32
 
 // WalletUpdateAuthorization encapsulates the client generated authorization for wallet updates
@@ -58,53 +61,53 @@ type WalletUpdateAuthorization struct {
 }
 
 // BuildGetWalletPath builds the path for the GetWallet action
-func BuildGetWalletPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(GetWalletPath, walletId)
+func BuildGetWalletPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(GetWalletPath, walletID)
 }
 
 // BuildBackOfQueueWalletPath builds the path for the BackOfQueueWallet action
-func BuildBackOfQueueWalletPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(BackOfQueueWalletPath, walletId)
+func BuildBackOfQueueWalletPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(BackOfQueueWalletPath, walletID)
 }
 
 // BuildRefreshWalletPath builds the path for the RefreshWallet action
-func BuildRefreshWalletPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(RefreshWalletPath, walletId)
+func BuildRefreshWalletPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(RefreshWalletPath, walletID)
 }
 
 // BuildCreateOrderPath builds the path for the CreateOrder action
-func BuildCreateOrderPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(CreateOrderPath, walletId)
+func BuildCreateOrderPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(CreateOrderPath, walletID)
 }
 
 // BuildCancelOrderPath builds the path for the CancelOrder action
-func BuildCancelOrderPath(walletId uuid.UUID, orderId uuid.UUID) string {
-	return fmt.Sprintf(CancelOrderPath, walletId, orderId)
+func BuildCancelOrderPath(walletID uuid.UUID, orderID uuid.UUID) string {
+	return fmt.Sprintf(CancelOrderPath, walletID, orderID)
 }
 
 // BuildDepositPath builds the path for the Deposit action
-func BuildDepositPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(DepositPath, walletId)
+func BuildDepositPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(DepositPath, walletID)
 }
 
 // BuildWithdrawPath builds the path for the Withdraw action
-func BuildWithdrawPath(walletId uuid.UUID, mint string) string {
-	return fmt.Sprintf(WithdrawPath, walletId, mint)
+func BuildWithdrawPath(walletID uuid.UUID, mint string) string {
+	return fmt.Sprintf(WithdrawPath, walletID, mint)
 }
 
 // BuildPayFeesPath builds the path for the PayFees action
-func BuildPayFeesPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(PayFeesPath, walletId)
+func BuildPayFeesPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(PayFeesPath, walletID)
 }
 
 // BuildTaskStatusPath builds the path for the TaskStatus action
-func BuildTaskStatusPath(taskId uuid.UUID) string {
-	return fmt.Sprintf(TaskStatusPath, taskId)
+func BuildTaskStatusPath(taskID uuid.UUID) string {
+	return fmt.Sprintf(TaskStatusPath, taskID)
 }
 
 // BuildTaskHistoryPath builds the path for the TaskHistory action
-func BuildTaskHistoryPath(walletId uuid.UUID) string {
-	return fmt.Sprintf(TaskHistoryPath, walletId)
+func BuildTaskHistoryPath(walletID uuid.UUID) string {
+	return fmt.Sprintf(TaskHistoryPath, walletID)
 }
 
 // -----------------------
@@ -127,7 +130,7 @@ type GetWalletResponse struct {
 
 // LookupWalletRequest is the request body for the LookupWallet action
 type LookupWalletRequest struct {
-	WalletId        uuid.UUID          `json:"wallet_id"`
+	WalletId        uuid.UUID          `json:"wallet_id"` //nolint:revive
 	BlinderSeed     ScalarLimbs        `json:"blinder_seed"`
 	ShareSeed       ScalarLimbs        `json:"secret_share_seed"`
 	PrivateKeychain ApiPrivateKeychain `json:"private_keychain"`
@@ -135,13 +138,13 @@ type LookupWalletRequest struct {
 
 // LookupWalletResponse is the response body for a LookupWallet request
 type LookupWalletResponse struct {
-	WalletId uuid.UUID `json:"wallet_id"`
-	TaskId   uuid.UUID `json:"task_id"`
+	WalletId uuid.UUID `json:"wallet_id"` //nolint:revive
+	TaskId   uuid.UUID `json:"task_id"`   //nolint:revive
 }
 
 // RefreshWalletResponse is the response body for a RefreshWallet request
 type RefreshWalletResponse struct {
-	TaskId uuid.UUID `json:"task_id"`
+	TaskId uuid.UUID `json:"task_id"` //nolint:revive
 }
 
 // CreateWalletRequest is the request body for the CreateWallet action
@@ -152,8 +155,8 @@ type CreateWalletRequest struct {
 
 // CreateWalletResponse is the response body for the CreateWallet action
 type CreateWalletResponse struct {
-	TaskId   uuid.UUID `json:"task_id"`
-	WalletId uuid.UUID `json:"wallet_id"`
+	TaskId   uuid.UUID `json:"task_id"`   //nolint:revive
+	WalletId uuid.UUID `json:"wallet_id"` //nolint:revive
 }
 
 // CreateOrderRequest is the request body for the CreateOrder action
@@ -165,9 +168,9 @@ type CreateOrderRequest struct {
 // CreateOrderResponse is the response body for the CreateOrder action
 type CreateOrderResponse struct {
 	// Id is the ID of the order that was created
-	Id uuid.UUID `json:"id"`
+	Id uuid.UUID `json:"id"` //nolint:revive
 	// TaskId is the ID of the task that was created to update the wallet
-	TaskId uuid.UUID `json:"task_id"`
+	TaskId uuid.UUID `json:"task_id"` //nolint:revive
 }
 
 // CancelOrderRequest is the request body for the CancelOrder action
@@ -178,7 +181,7 @@ type CancelOrderRequest struct {
 // CancelOrderResponse is the response body for the CancelOrder action
 type CancelOrderResponse struct {
 	// TaskId is the ID of the task that was created to update the wallet
-	TaskId uuid.UUID `json:"task_id"`
+	TaskId uuid.UUID `json:"task_id"` //nolint:revive
 	// Order is the order that was canceled
 	Order ApiOrder `json:"order"`
 }
@@ -206,7 +209,7 @@ type DepositRequest struct {
 // DepositResponse is the response body for the Deposit action
 type DepositResponse struct {
 	// TaskId is the ID of the task that was created to update the wallet
-	TaskId uuid.UUID `json:"task_id"`
+	TaskId uuid.UUID `json:"task_id"` //nolint:revive
 }
 
 // WithdrawRequest is the request body for the Withdraw action
@@ -225,18 +228,18 @@ type WithdrawRequest struct {
 // WithdrawResponse is the response body for the Withdraw action
 type WithdrawResponse struct {
 	// TaskId is the ID of the task that was created to update the wallet
-	TaskId uuid.UUID `json:"task_id"`
+	TaskId uuid.UUID `json:"task_id"` //nolint:revive
 }
 
 // PayFeesResponse is the response body for the PayFees action
 type PayFeesResponse struct {
 	// TaskIds are the IDs of the tasks that were created to pay the fees
-	TaskIds []uuid.UUID `json:"task_ids"`
+	TaskIds []uuid.UUID `json:"task_ids"` //nolint:revive
 }
 
 // ApiTaskStatus is the status of a running task
 // ApiTaskStatus represents the status of a task
-type ApiTaskStatus struct {
+type ApiTaskStatus struct { //nolint:revive
 	// ID is the identifier of the task
 	ID uuid.UUID `json:"id"`
 	// Description is the description of the task
@@ -254,9 +257,9 @@ type TaskResponse struct {
 }
 
 // ApiHistoricalTask represents a historical task
-type ApiHistoricalTask struct {
+type ApiHistoricalTask struct { //nolint:revive
 	// ID is the identifier of the task
-	Id uuid.UUID `json:"id"`
+	Id uuid.UUID `json:"id"` //nolint:revive
 	// State is the current state of the task
 	State string `json:"state"`
 	// CreatedAt is the timestamp when the task was created

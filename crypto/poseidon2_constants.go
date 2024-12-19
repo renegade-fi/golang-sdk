@@ -7,10 +7,10 @@ import (
 // Poseidon2Sponge is a sponge
 const (
 	// R_F is the number of full rounds in the Poseidon permutation
-	R_F = 8
+	R_F = 8 //nolint:revive
 
 	// R_P is the number of partial rounds in the Poseidon permutation
-	R_P = 56
+	R_P = 56 //nolint:revive
 
 	// WIDTH is the width of the Poseidon permutation's code
 	WIDTH = 3
@@ -27,7 +27,7 @@ const (
 
 // FULL_ROUND_CONSTANTS are the round constants used in the full rounds of the Poseidon permutation
 // In Montgomery form
-var FULL_ROUND_CONSTANTS = [R_F][WIDTH]fr.Element{
+var fullRoundConstants = [R_F][WIDTH]fr.Element{
 	{
 		{15502152792957798476, 2953781152519934815, 789263285804927433, 3266336410389770144},
 		{6170676942082823556, 15509510193735291493, 7415284283107350036, 292284789622600672},
@@ -72,7 +72,7 @@ var FULL_ROUND_CONSTANTS = [R_F][WIDTH]fr.Element{
 
 // PARTIAL_ROUND_CONSTANTS are the round constants used in the partial rounds
 // of the Poseidon permutation in Montgomery form
-var PARTIAL_ROUND_CONSTANTS = [R_P]fr.Element{
+var partialRoundConstants = [R_P]fr.Element{
 	{7073706554792388047, 15115725580624899978, 3679228461395092567, 1155120523926954320},
 	{9209151483111776538, 17577545623568481397, 13585757825660930829, 3472890281115441576},
 	{5142214011637547477, 6729742127441928110, 7928974164783286805, 2757086277530341826},
