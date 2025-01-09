@@ -202,9 +202,14 @@ The SDK and the relayer will prevent you from allocating more balances and order
 # External (Atomic) Matching
 We also allow for matches to be generated _externally_; meaning generated as a match between a Renegade user -- with state committed into the darkpool -- and an external user, with no state in the darkpool.
 
-To generate an external match, a client may request an `ExternalMatchBundle` from the relayer. This type contains:
-- The result of the match, including the amount and mint (erc20 address) of each token in the match. This can be a partial match; the external order may not be fully filled.
-- A transaction that the client can submit on-chain to settle the match.
+To generate an external match, a client first submits an `ExternalOrder` to the relayer; which will attempt to match the order against consenting _internal_ orders. 
+If a match is found, the relayer responds with a quote containing:
+- The match itself, specifying the amount and mint (ERC20 address) of the tokens bought and sold, fees, etc.
+- A signature of the quote; which allows the client to authoritatively assemble the quote into a match bundle
+
+If the client is satisfied with the quote, they can assemble the quote into a match bundle. This bundle contains:
+- The match itself, specifying the amount and mint (ERC20 address) of the tokens bought and sold
+- An EVM transaction that the external party may submit in order to settle the match with the darkpool
 
 When the protocol receives such a transaction, it will update the internal party's state to reflect the match, and settle any obligations to the external party via ERC20 transfers.
 
@@ -382,6 +387,12 @@ When assembled into a bundle (returned from `AssembleExternalQuote` or `GetExter
     - `Value`: The ETH value to send
 
 See example [`02_external_quote_validation`](examples/02_external_quote_validation/main.go) for an example of using these fields to validate a quote before submitting it.
+
+## Rate Limits
+The rate limits for external match endpoints are as follows: 
+- **Quote**: 100 requests per minute
+- **Assemble**: 5 _unsettled_ bundles per minute. That is, if an assembled bundle is submitted on-chain, the rate limiter will reset. 
+If an assembled match is not settled on-chain, the rate limiter will remove one token from the per-minute allowance.
 
 ## Supported Tokens
 Renegade supports a specific set of tokens for external matches. These can be found at:
