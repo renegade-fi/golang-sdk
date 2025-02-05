@@ -46,6 +46,12 @@ const (
 	GetExternalMatchQuotePath = "/v0/matching-engine/quote"
 	// AssembleExternalQuotePath is the path to assemble a quote into a settlement transaction
 	AssembleExternalQuotePath = "/v0/matching-engine/assemble-external-match"
+
+	// --- External Match Query Params --- //
+	// RequestGasSponsorshipParam is the query param used to request gas sponsorship
+	RequestGasSponsorshipParam = "use_gas_sponsorship"
+	// GasRefundAddressParam is the query param used to specify the gas refund address
+	GasRefundAddressParam = "refund_address"
 )
 
 // ScalarLimbs is an array of uint32 limbs

@@ -207,7 +207,11 @@ func (c *HttpClient) addAuth(req *http.Request, bodyBytes []byte) {
 
 	// Create the hmac
 	h := hmac.New(sha256.New, c.authKey[:])
-	hmacPayload := c.getHmacPayload(req.URL.Path, req.Header, bodyBytes)
+	fullPath := req.URL.Path
+	if req.URL.RawQuery != "" {
+		fullPath += "?" + req.URL.RawQuery
+	}
+	hmacPayload := c.getHmacPayload(fullPath, req.Header, bodyBytes)
 	h.Write(hmacPayload)
 
 	signature := base64.RawStdEncoding.EncodeToString(h.Sum(nil))
