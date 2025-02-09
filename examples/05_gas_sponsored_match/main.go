@@ -101,6 +101,11 @@ func getQuoteAndSubmitWithGasSponsorship(
 		return nil
 	}
 
+	if !bundle.GasSponsored {
+		fmt.Println("Bundle was not sponsored, abandoning...")
+		return nil
+	}
+
 	// 3. Submit the bundle
 	fmt.Println("Submitting bundle...")
 	if err := submitBundle(*bundle); err != nil {

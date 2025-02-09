@@ -33,6 +33,11 @@ type ExternalMatchBundle struct {
 	Receive      *api_types.ApiExternalAssetTransfer
 	Send         *api_types.ApiExternalAssetTransfer
 	SettlementTx *SettlementTransaction
+	// Whether the match has received gas sponsorship
+	//
+	// If `true`, the bundle is routed through a gas rebate contract that
+	// refunds the gas used by the match to the configured address
+	GasSponsored bool
 }
 
 // SettlementTransaction is the application level analog to the ApiSettlementTransaction
@@ -278,6 +283,7 @@ func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 		Receive:      &response.Bundle.Receive,
 		Send:         &response.Bundle.Send,
 		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
+		GasSponsored: response.GasSponsored,
 	}, nil
 }
 
@@ -337,6 +343,7 @@ func (c *ExternalMatchClient) GetExternalMatchBundleWithOptions(
 	return &ExternalMatchBundle{
 		MatchResult:  &response.Bundle.MatchResult,
 		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
+		GasSponsored: response.GasSponsored,
 	}, nil
 }
 
