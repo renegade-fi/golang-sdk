@@ -293,7 +293,8 @@ type ExternalMatchRequest struct {
 
 // ExternalMatchResponse is the response body for the ExternalMatch action
 type ExternalMatchResponse struct {
-	Bundle ApiExternalMatchBundle `json:"match_bundle"`
+	Bundle       ApiExternalMatchBundle `json:"match_bundle"`
+	GasSponsored bool                   `json:"is_sponsored"`
 }
 
 // ExternalQuoteRequest is a request to fetch an external match quote
