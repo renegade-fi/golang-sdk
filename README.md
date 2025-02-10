@@ -361,6 +361,29 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 
 </details>
 
+## Gas Sponsorship
+
+The Renegade relayer will cover the gas cost of external match transactions, up to a daily limit. When requested, the relayer will re-route the settlement transaction through a gas rebate contract. This contract refunds the cost of the transaction (in ether) to the configured address. If no address is given, the rebate is sent to `tx.origin`. 
+
+To request gas sponsorship, simply add `WithRequestGasSponsorship` to the `AssembleExternalMatchOptions` type:
+```go
+refundAddr := "0xdeadbeef..."
+options := external_match_client.NewAssembleExternalMatchOptions().
+    WithRequestGasSponsorship(true).
+    WithGasRefundAddress(&refundAddr) // tx.origin if not set
+
+bundle, err := client.AssembleExternalMatchWithOptions(quote, options)
+// ... Submit bundle ... //
+```
+
+For a full example, see [`examples/05_gas_sponsored_match/main.go`](examples/05_gas_sponsored_match/main.go).
+
+### Gas Sponsorship Notes
+
+- There is some overhead to the gas rebate contract, so the gas cost paid by the user is non-zero. This value is consistently around **17k gas**, or around **$0.0004** with current gas prices.
+- The gas estimate returned by `eth_estimateGas` will _not_ reflect the rebate, as the rebate does not _reduce_ the gas used; it merely refunds the ether paid for the gas. If you wish to understand the true gas cost ahead of time, the transaction can be simulated (e.g. with `alchemy_simulateExecution` or similar).
+- The rate limits currently sponsor up to **~500 matches/day** ($100 in gas). 
+
 ## Bundle Structure
 The *quote* returned by the relayer for an external match has the following structure:
 - `Order`: The original external order
