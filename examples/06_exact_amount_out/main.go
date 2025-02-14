@@ -1,0 +1,98 @@
+package main
+
+import (
+	"fmt"
+	"math/big"
+	"os"
+
+	"github.com/renegade-fi/golang-sdk/client/api_types"
+	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
+	"github.com/renegade-fi/golang-sdk/wallet"
+)
+
+func main() {
+	// Get API credentials from environment
+	apiKey := os.Getenv("EXTERNAL_MATCH_KEY")
+	apiSecret := os.Getenv("EXTERNAL_MATCH_SECRET")
+	if apiKey == "" || apiSecret == "" {
+		panic("EXTERNAL_MATCH_KEY and EXTERNAL_MATCH_SECRET must be set")
+	}
+
+	apiSecretKey, err := new(wallet.HmacKey).FromBase64String(apiSecret)
+	if err != nil {
+		panic(err)
+	}
+
+	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
+
+	// Fetch token mappings from the relayer
+	quoteMint, err := findTokenAddr("USDC", externalMatchClient)
+	if err != nil {
+		panic(err)
+	}
+	baseMint, err := findTokenAddr("WETH", externalMatchClient)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create an order that specifies we want exactly 0.1 WETH out, net of fees
+	// We're willing to spend up to 200 USDC for this amount
+	quoteAmountOut := new(big.Int).SetUint64(20_000_000) // $200 USDC max spend
+
+	order, err := api_types.NewExternalOrderBuilder().
+		WithQuoteMint(quoteMint).
+		WithBaseMint(baseMint).
+		WithExactQuoteAmountOutput(api_types.Amount(*quoteAmountOut)).
+		WithSide("Sell").
+		Build()
+	if err != nil {
+		panic(err)
+	}
+
+	if err := getQuoteWithExactAmount(order, externalMatchClient); err != nil {
+		panic(err)
+	}
+}
+
+// getQuoteAndSubmit gets a quote, assembles it, then submits the bundle
+func getQuoteWithExactAmount(order *api_types.ApiExternalOrder, client *external_match_client.ExternalMatchClient) error {
+	// 1. Get a quote from the relayer
+	fmt.Println("Getting quote...")
+	quote, err := client.GetExternalMatchQuote(order)
+	if err != nil {
+		return err
+	}
+
+	if quote == nil {
+		fmt.Println("No quote found")
+		return nil
+	}
+
+	// Print the quote details
+	fmt.Printf("Quote found!\n")
+	fmt.Printf("You will send: %v %s\n", quote.Quote.Send.Amount, quote.Quote.Send.Mint)
+	fmt.Printf("You will receive (net of fees): %v %s\n", quote.Quote.Receive.Amount, quote.Quote.Receive.Mint)
+	fmt.Printf("Total fees: %v\n", quote.Quote.Fees.Total())
+
+	// You can now assemble the quote and submit a bundle, see `01_external_match` for an example
+	return nil
+}
+
+// -----------
+// | Helpers |
+// -----------
+
+func findTokenAddr(symbol string, client *external_match_client.ExternalMatchClient) (string, error) {
+	tokens, err := client.GetSupportedTokens()
+	if err != nil {
+		return "", err
+	}
+
+	for _, token := range tokens {
+		if token.Symbol == symbol {
+			return token.Address, nil
+		}
+	}
+
+	return "", fmt.Errorf("token not found")
+}
