@@ -11,6 +11,8 @@ const (
 	// --- Orderbook Endpoints --- //
 	// GetSupportedTokensPath is the path for the GetSupportedTokens action
 	GetSupportedTokensPath = "/v0/supported-tokens"
+	// GetFeeForAssetPath is the path for the GetFeeForAsset action
+	GetFeeForAssetPath = "/v0/order_book/external-match-fee"
 
 	// --- Wallet Endpoints --- //
 	// GetWalletPath is the path for the GetWallet action
@@ -64,6 +66,11 @@ type WalletUpdateAuthorization struct {
 	StatementSig *string `json:"statement_sig"`
 	// NewRootKey is the root key for the new wallet, if the client prefers to rotate the root key
 	NewRootKey *string `json:"new_root_key"`
+}
+
+// BuildGetFeeForAssetPath builds the path for the GetFeeForAsset action
+func BuildGetFeeForAssetPath(mint string) string {
+	return fmt.Sprintf("%s?mint=%s", GetFeeForAssetPath, mint)
 }
 
 // BuildGetWalletPath builds the path for the GetWallet action

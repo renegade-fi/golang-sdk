@@ -175,3 +175,9 @@ type ApiSettlementTransaction struct { //nolint:revive
 	Data  string `json:"data"`
 	Value string `json:"value"`
 }
+
+// ApiExternalMatchFee represents the fees for a given asset in external matches
+type ApiExternalMatchFee struct { //nolint:revive
+	RelayerFee  string `json:"relayer_fee"`
+	ProtocolFee string `json:"protocol_fee"`
+}
