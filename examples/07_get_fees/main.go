@@ -3,30 +3,24 @@ package main
 
 import (
 	"fmt"
-	"os"
 
-	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
-	"github.com/renegade-fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/examples/common"
 )
 
 func main() {
-	// Get API credentials from environment
-	apiKey := os.Getenv("EXTERNAL_MATCH_KEY")
-	apiSecret := os.Getenv("EXTERNAL_MATCH_SECRET")
-	if apiKey == "" || apiSecret == "" {
-		panic("EXTERNAL_MATCH_KEY and EXTERNAL_MATCH_SECRET must be set")
+	client, err := common.CreateExternalMatchClient()
+	if err != nil {
+		panic(err)
 	}
 
-	apiSecretKey, err := new(wallet.HmacKey).FromBase64String(apiSecret)
+	// Get WETH address
+	wethAddr, err := common.FindTokenAddr("WETH", client)
 	if err != nil {
 		panic(err)
 	}
 
 	// Get fees for WETH
-	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
-
-	mint := "0xc3414a7ef14aaaa9c4522dfc00a4e66e74e9c25a" // Testnet WETH
-	fees, err := externalMatchClient.GetFeeForAsset(&mint)
+	fees, err := client.GetFeeForAsset(&wethAddr)
 	if err != nil {
 		panic(err)
 	}

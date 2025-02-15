@@ -200,7 +200,7 @@ func (c *HttpClient) doRequestWithStatus(
 // addAuth adds authentication headers to the request
 func (c *HttpClient) addAuth(req *http.Request, bodyBytes []byte) {
 	// Compute the expiration time
-	expiration := time.Now().Add(signatureExpiration * time.Second).UnixMilli()
+	expiration := time.Now().Add(signatureExpiration).UnixMilli()
 	expirationBytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(expirationBytes, uint64(expiration)) //nolint:gosec
 	req.Header.Set(expirationHeader, strconv.FormatInt(expiration, 10))

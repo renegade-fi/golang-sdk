@@ -1,44 +1,33 @@
+// Package main provides an example of how to get a quote for an exact amount out
 package main
 
 import (
 	"fmt"
 	"math/big"
-	"os"
 
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
-	"github.com/renegade-fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/examples/common"
 )
 
 func main() {
-	// Get API credentials from environment
-	apiKey := os.Getenv("EXTERNAL_MATCH_KEY")
-	apiSecret := os.Getenv("EXTERNAL_MATCH_SECRET")
-	if apiKey == "" || apiSecret == "" {
-		panic("EXTERNAL_MATCH_KEY and EXTERNAL_MATCH_SECRET must be set")
-	}
-
-	apiSecretKey, err := new(wallet.HmacKey).FromBase64String(apiSecret)
+	client, err := common.CreateExternalMatchClient()
 	if err != nil {
 		panic(err)
 	}
-
-	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
 
 	// Fetch token mappings from the relayer
-	quoteMint, err := findTokenAddr("USDC", externalMatchClient)
+	quoteMint, err := common.FindTokenAddr("USDC", client)
 	if err != nil {
 		panic(err)
 	}
-	baseMint, err := findTokenAddr("WETH", externalMatchClient)
+	baseMint, err := common.FindTokenAddr("WETH", client)
 	if err != nil {
 		panic(err)
 	}
 
-	// Create an order that specifies we want exactly 0.1 WETH out, net of fees
-	// We're willing to spend up to 200 USDC for this amount
-	quoteAmountOut := new(big.Int).SetUint64(20_000_000) // $200 USDC max spend
-
+	// Specify an exact output amount of the quote token
+	quoteAmountOut := new(big.Int).SetUint64(2_123_456)
 	order, err := api_types.NewExternalOrderBuilder().
 		WithQuoteMint(quoteMint).
 		WithBaseMint(baseMint).
@@ -49,12 +38,12 @@ func main() {
 		panic(err)
 	}
 
-	if err := getQuoteWithExactAmount(order, externalMatchClient); err != nil {
+	if err := getQuoteWithExactAmount(order, client); err != nil {
 		panic(err)
 	}
 }
 
-// getQuoteAndSubmit gets a quote, assembles it, then submits the bundle
+// getQuoteWithExactAmount gets a quote and prints the details
 func getQuoteWithExactAmount(order *api_types.ApiExternalOrder, client *external_match_client.ExternalMatchClient) error {
 	// 1. Get a quote from the relayer
 	fmt.Println("Getting quote...")
