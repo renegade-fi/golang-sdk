@@ -3,34 +3,24 @@ package main
 import (
 	"fmt"
 	"math/big"
-	"os"
 
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 	external_match_client "github.com/renegade-fi/golang-sdk/client/external_match_client"
-	"github.com/renegade-fi/golang-sdk/wallet"
+	"github.com/renegade-fi/golang-sdk/examples/common"
 )
 
 func main() {
-	// Get API credentials from environment
-	apiKey := os.Getenv("EXTERNAL_MATCH_KEY")
-	apiSecret := os.Getenv("EXTERNAL_MATCH_SECRET")
-	if apiKey == "" || apiSecret == "" {
-		panic("EXTERNAL_MATCH_KEY and EXTERNAL_MATCH_SECRET must be set")
-	}
-
-	apiSecretKey, err := new(wallet.HmacKey).FromBase64String(apiSecret)
+	client, err := common.CreateExternalMatchClient()
 	if err != nil {
 		panic(err)
 	}
-
-	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
 
 	// Fetch token mappings from the relayer
-	quoteMint, err := findTokenAddr("USDC", externalMatchClient)
+	quoteMint, err := common.FindTokenAddr("USDC", client)
 	if err != nil {
 		panic(err)
 	}
-	baseMint, err := findTokenAddr("WETH", externalMatchClient)
+	baseMint, err := common.FindTokenAddr("WETH", client)
 	if err != nil {
 		panic(err)
 	}
@@ -49,12 +39,12 @@ func main() {
 		panic(err)
 	}
 
-	if err := getQuoteWithExactAmount(order, externalMatchClient); err != nil {
+	if err := getQuoteWithExactAmount(order, client); err != nil {
 		panic(err)
 	}
 }
 
-// getQuoteAndSubmit gets a quote, assembles it, then submits the bundle
+// getQuoteWithExactAmount gets a quote and prints the details
 func getQuoteWithExactAmount(order *api_types.ApiExternalOrder, client *external_match_client.ExternalMatchClient) error {
 	// 1. Get a quote from the relayer
 	fmt.Println("Getting quote...")
