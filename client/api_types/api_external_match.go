@@ -19,6 +19,14 @@ type ApiExternalOrder struct { //nolint:revive
 	BaseAmount Amount `json:"base_amount"`
 	// The amount of the quote asset to buy/sell
 	QuoteAmount Amount `json:"quote_amount"`
+	// The exact output amount of the base token
+	// If specified, the relayer's matching engine will attempt to fill the order
+	// to result in exactly this base amount, net of fees
+	ExactBaseAmountOutput Amount `json:"exact_base_output"`
+	// The exact output amount of the quote token
+	// If specified, the relayer's matching engine will attempt to fill the order
+	// to result in exactly this quote amount, net of fees
+	ExactQuoteAmountOutput Amount `json:"exact_quote_output"`
 	// The side of the order
 	Side string `json:"side"`
 	// The minimum fill amount to cross the order at
@@ -35,12 +43,14 @@ type ApiExternalOrderBuilder struct { //nolint:revive
 func NewExternalOrderBuilder() *ApiExternalOrderBuilder {
 	return &ApiExternalOrderBuilder{
 		order: ApiExternalOrder{
-			BaseMint:    "",
-			QuoteMint:   "",
-			BaseAmount:  Amount(*big.NewInt(0)),
-			QuoteAmount: Amount(*big.NewInt(0)),
-			Side:        "",
-			MinFillSize: Amount(*big.NewInt(0)),
+			BaseMint:               "",
+			QuoteMint:              "",
+			BaseAmount:             Amount(*big.NewInt(0)),
+			QuoteAmount:            Amount(*big.NewInt(0)),
+			ExactBaseAmountOutput:  Amount(*big.NewInt(0)),
+			ExactQuoteAmountOutput: Amount(*big.NewInt(0)),
+			Side:                   "",
+			MinFillSize:            Amount(*big.NewInt(0)),
 		},
 	}
 }
@@ -69,6 +79,22 @@ func (b *ApiExternalOrderBuilder) WithQuoteAmount(amount Amount) *ApiExternalOrd
 	return b
 }
 
+// WithExactBaseAmountOutput sets the exact base output amount
+// If specified, the relayer's matching engine will attempt to fill the order
+// to result in exactly this base amount, net of fees
+func (b *ApiExternalOrderBuilder) WithExactBaseAmountOutput(amount Amount) *ApiExternalOrderBuilder {
+	b.order.ExactBaseAmountOutput = amount
+	return b
+}
+
+// WithExactQuoteAmountOutput sets the exact quote output amount
+// If specified, the relayer's matching engine will attempt to fill the order
+// to result in exactly this quote amount, net of fees
+func (b *ApiExternalOrderBuilder) WithExactQuoteAmountOutput(amount Amount) *ApiExternalOrderBuilder {
+	b.order.ExactQuoteAmountOutput = amount
+	return b
+}
+
 // WithSide sets the side
 func (b *ApiExternalOrderBuilder) WithSide(side string) *ApiExternalOrderBuilder {
 	b.order.Side = side
@@ -92,8 +118,9 @@ func (b *ApiExternalOrderBuilder) Build() (*ApiExternalOrder, error) {
 	if b.order.Side == "" {
 		return nil, errors.New("side is required")
 	}
-	if b.order.BaseAmount.IsZero() && b.order.QuoteAmount.IsZero() {
-		return nil, errors.New("either base amount or quote amount must be set")
+	amountUnset := b.order.BaseAmount.IsZero() && b.order.QuoteAmount.IsZero() && b.order.ExactBaseAmountOutput.IsZero() && b.order.ExactQuoteAmountOutput.IsZero()
+	if amountUnset {
+		return nil, errors.New("one of `BaseAmount`, `QuoteAmount`, `ExactBaseAmountOutput`, or `ExactQuoteAmountOutput` must be set")
 	}
 	return &b.order, nil
 }
