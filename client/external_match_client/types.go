@@ -26,6 +26,8 @@ type ExternalMatchBundle struct {
 	// If `true`, the bundle is routed through a gas rebate contract that
 	// refunds the gas used by the match to the configured address
 	GasSponsored bool
+	// The gas sponsorship info, if the match was sponsored
+	GasSponsorshipInfo *api_types.ApiGasSponsorshipInfo
 }
 
 // SettlementTransaction is the application level analog to the ApiSettlementTransaction
@@ -85,6 +87,62 @@ func toExternalMatchFee(fee *api_types.ApiExternalMatchFee) (*ExternalMatchFee, 
 // | Options Types |
 // -----------------
 
+// ExternalQuoteOptions represents the options for a quote request
+type ExternalQuoteOptions struct {
+	// DisableGasSponsorship is a flag to disable gas sponsorship for the quote
+	//
+	// This is subject to rate limit by the auth server, but if approved will refund the gas spent
+	// on the settlement tx to the address specified in `GasRefundAddress`, or the associated default
+	// if no refund address is specified.
+	DisableGasSponsorship bool
+	// GasRefundAddress is the address to refund the gas to. If unspecified, then in the case of a
+	// native ETH refund, defaults to `tx.origin`, and in the case of an in-kind refund, defaults to
+	// the receiver address.
+	GasRefundAddress *string
+	// RefundNativeEth is a flag to request a receiving the gas sponsorship refund
+	// in terms of native ETH, as opposed to the buy-side token ("in-kind" sponsorship).
+	RefundNativeEth bool
+}
+
+// WithDisableGasSponsorship sets whether to disable gas sponsorship
+func (o *ExternalQuoteOptions) WithDisableGasSponsorship(disable bool) *ExternalQuoteOptions {
+	o.DisableGasSponsorship = disable
+	return o
+}
+
+// WithGasRefundAddress sets the gas refund address for the quote options
+func (o *ExternalQuoteOptions) WithGasRefundAddress(address *string) *ExternalQuoteOptions {
+	o.GasRefundAddress = address
+	return o
+}
+
+// WithRefundNativeEth sets whether to request a native ETH refund
+func (o *ExternalQuoteOptions) WithRefundNativeEth(refundNativeEth bool) *ExternalQuoteOptions {
+	o.RefundNativeEth = refundNativeEth
+	return o
+}
+
+// BuildRequestPath builds the request path for the quote options
+func (o *ExternalQuoteOptions) BuildRequestPath() string {
+	path := api_types.GetExternalMatchQuotePath
+	path += fmt.Sprintf("?%s=%t", api_types.DisableGasSponsorshipParam, o.DisableGasSponsorship)
+	path += fmt.Sprintf("&%s=%t", api_types.RefundNativeEthParam, o.RefundNativeEth)
+	if o.GasRefundAddress != nil {
+		path += fmt.Sprintf("&%s=%s", api_types.GasRefundAddressParam, *o.GasRefundAddress)
+	}
+
+	return path
+}
+
+// NewExternalQuoteOptions creates a new ExternalQuoteOptions with default values
+func NewExternalQuoteOptions() *ExternalQuoteOptions {
+	return &ExternalQuoteOptions{
+		DisableGasSponsorship: false,
+		GasRefundAddress:      nil,
+		RefundNativeEth:       false,
+	}
+}
+
 // AssembleExternalMatchOptions represents the options for an assembly request
 type AssembleExternalMatchOptions struct {
 	ReceiverAddress *string
@@ -95,10 +153,14 @@ type AssembleExternalMatchOptions struct {
 	// This is subject to rate limit by the auth server, but if approved will refund the gas spent
 	// on the settlement tx to the address specified in `GasRefundAddress`. If no refund address is
 	// specified, the refund is directed to `tx.origin`
+	//
+	// Deprecated: Request gas sponsorship when requesting a quote
 	RequestGasSponsorship bool
 	// GasRefundAddress is the address to refund the gas to
 	//
 	// This is ignored if `RequestGasSponsorship` is false
+	//
+	// Deprecated: Request gas sponsorship when requesting a quote
 	GasRefundAddress *string
 }
 
@@ -135,7 +197,13 @@ func (o *AssembleExternalMatchOptions) WithGasRefundAddress(address *string) *As
 // BuildRequestPath builds the request path for the assembly options
 func (o *AssembleExternalMatchOptions) BuildRequestPath() string {
 	path := api_types.AssembleExternalQuotePath
-	path += fmt.Sprintf("?%s=%t", api_types.RequestGasSponsorshipParam, o.RequestGasSponsorship)
+	if o.RequestGasSponsorship {
+		// We only write this query parameter if it was explicitly set. The
+		// expectation of the auth server is that when gas sponsorship is
+		// requested at the quote stage, there should be no query parameters
+		// at all in the assemble request.
+		path += fmt.Sprintf("?%s=%t", api_types.DisableGasSponsorshipParam, !o.RequestGasSponsorship)
+	}
 	if o.GasRefundAddress != nil {
 		path += fmt.Sprintf("&%s=%s", api_types.GasRefundAddressParam, *o.GasRefundAddress)
 	}
@@ -162,7 +230,7 @@ type ExternalMatchOptions struct {
 // BuildRequestPath builds the request path for the external match options
 func (o *ExternalMatchOptions) BuildRequestPath() string {
 	path := api_types.GetExternalMatchBundlePath
-	path += fmt.Sprintf("?%s=%t", api_types.RequestGasSponsorshipParam, o.RequestGasSponsorship)
+	path += fmt.Sprintf("?%s=%t", api_types.DisableGasSponsorshipParam, !o.RequestGasSponsorship)
 	if o.GasRefundAddress != nil {
 		path += fmt.Sprintf("&%s=%s", api_types.GasRefundAddressParam, *o.GasRefundAddress)
 	}
