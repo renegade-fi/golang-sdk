@@ -66,22 +66,3 @@ func getQuoteWithExactAmount(order *api_types.ApiExternalOrder, client *external
 	// You can now assemble the quote and submit a bundle, see `01_external_match` for an example
 	return nil
 }
-
-// -----------
-// | Helpers |
-// -----------
-
-func findTokenAddr(symbol string, client *external_match_client.ExternalMatchClient) (string, error) {
-	tokens, err := client.GetSupportedTokens()
-	if err != nil {
-		return "", err
-	}
-
-	for _, token := range tokens {
-		if token.Symbol == symbol {
-			return token.Address, nil
-		}
-	}
-
-	return "", fmt.Errorf("token not found")
-}

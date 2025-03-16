@@ -48,14 +48,19 @@ func main() {
 	}
 }
 
-// getQuoteAndSubmitWithGasSponsorship gets a quote, assembles it with gas sponsorship, then submits
+// getQuoteAndSubmitWithGasSponsorship gets a quote with gas sponsorship, assembles it, then submits
 func getQuoteAndSubmitWithGasSponsorship(
 	order *api_types.ApiExternalOrder,
 	client *external_match_client.ExternalMatchClient,
 ) error {
-	// 1. Get a quote from the relayer
-	fmt.Println("Getting quote...")
-	quote, err := client.GetExternalMatchQuote(order)
+	// 1. Get a quote from the relayer, explicitly requesting native ETH gas sponsorship
+	fmt.Println("Getting quote with gas sponsorship...")
+	refundAddr := gasRefundAddress
+	options := external_match_client.NewExternalQuoteOptions().
+		WithRefundNativeEth(true).
+		WithGasRefundAddress(&refundAddr)
+
+	quote, err := client.GetExternalMatchQuoteWithOptions(order, options)
 	if err != nil {
 		return err
 	}
@@ -65,14 +70,9 @@ func getQuoteAndSubmitWithGasSponsorship(
 		return nil
 	}
 
-	// 2. Assemble the bundle with gas sponsorship
-	fmt.Println("Assembling bundle with gas sponsorship...")
-	refundAddr := gasRefundAddress
-	options := external_match_client.NewAssembleExternalMatchOptions().
-		WithRequestGasSponsorship(true).
-		WithGasRefundAddress(&refundAddr)
-
-	bundle, err := client.AssembleExternalMatchWithOptions(quote, options)
+	// 2. Assemble the bundle
+	fmt.Println("Assembling bundle...")
+	bundle, err := client.AssembleExternalQuote(quote)
 	if err != nil {
 		return err
 	}
