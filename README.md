@@ -363,24 +363,25 @@ func submitBundle(bundle external_match_client.ExternalMatchBundle) error {
 
 ## Gas Sponsorship
 
-The Renegade relayer will cover the gas cost of external match transactions, up to a daily limit. When requested, the relayer will re-route the settlement transaction through a gas rebate contract. This contract refunds the cost of the transaction (in ether) to the configured address. If no address is given, the rebate is sent to `tx.origin`. 
+The Renegade relayer will cover the gas cost of external match transactions, up to a daily limit. When requested, the relayer will re-route the settlement transaction through a gas rebate contract. This contract refunds the cost of the transaction, either in native Ether, or in terms of the buy-side token in the external match.
+The rebate can optionally be sent to a configured address.
 
-To request gas sponsorship, simply add `WithRequestGasSponsorship` to the `AssembleExternalMatchOptions` type:
+For in-kind sponsorship, if no refund address is given, the rebate is sent to the receiver of the match. This is equivalent to the receiver getting a better price in the match, and as such the quoted price returned by the SDK is updated to reflect that.
+
+**In-kind gas sponsorship is enabled by default!**
+
+If, however, you would like to disable gas sponsorship, simply add `WithDisableGasSponsorship` to the `ExternalQuoteOptions` type:
 ```go
-refundAddr := "0xdeadbeef..."
-options := external_match_client.NewAssembleExternalMatchOptions().
-    WithRequestGasSponsorship(true).
-    WithGasRefundAddress(&refundAddr) // tx.origin if not set
-
-bundle, err := client.AssembleExternalMatchWithOptions(quote, options)
+options := external_match_client.NewExternalQuoteOptions().WithDisableGasSponsorship(true)
+quote, err := client.GetExternalMatchQuoteWithOptions(order, options)
 // ... Submit bundle ... //
 ```
 
-For a full example, see [`examples/05_gas_sponsored_match/main.go`](examples/05_gas_sponsored_match/main.go).
+For a examples on how to configure gas sponsorship, see [`examples/05_native_eth_gas_sponsorship/main.go`](examples/05_native_eth_gas_sponsorship/main.go), and [`examples/08_in_kind_gas_sponsorship/main.go`](examples/08_in_kind_gas_sponsorship/main.go).
 
 ### Gas Sponsorship Notes
 
-- There is some overhead to the gas rebate contract, so the gas cost paid by the user is non-zero. This value is consistently around **17k gas**, or around **$0.0004** with current gas prices.
+- The refund amount may not exactly equal the gas costs, as this must be estimated before constructing the transaction so it can be returned in the quote.
 - The gas estimate returned by `eth_estimateGas` will _not_ reflect the rebate, as the rebate does not _reduce_ the gas used; it merely refunds the ether paid for the gas. If you wish to understand the true gas cost ahead of time, the transaction can be simulated (e.g. with `alchemy_simulateExecution` or similar).
 - The rate limits currently sponsor up to **~500 matches/day** ($100 in gas). 
 
@@ -395,7 +396,7 @@ The *quote* returned by the relayer for an external match has the following stru
     - `Mint`: The token address
     - `Amount`: The amount to receive
 - `Send`: The asset transfer the external party needs to send. No fees are charged on the send transfer.  (same fields as `Receive`) 
-- `Price`: The price used for the match
+- `Price`: The price used for the match. If in-kind sponsorship was enabled, and directed to the receiver of the match, this price accounts for the additional tokens received.
 - `Timestamp`: The timestamp of the quote
 
 When assembled into a bundle (returned from `AssembleExternalQuote` or `GetExternalMatchBundle`), the structure is as follows:
