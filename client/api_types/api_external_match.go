@@ -148,6 +148,8 @@ type ApiExternalQuote struct { //nolint:revive
 type ApiSignedQuote struct { //nolint:revive
 	Quote     ApiExternalQuote `json:"quote"`
 	Signature string           `json:"signature"`
+	// The signed gas sponsorship info, if sponsorship was requested
+	GasSponsorshipInfo *ApiSignedGasSponsorshipInfo
 }
 
 // ApiExternalMatchBundle contains a match and a transaction that the client can submit on-chain
@@ -180,4 +182,23 @@ type ApiSettlementTransaction struct { //nolint:revive
 type ApiExternalMatchFee struct { //nolint:revive
 	RelayerFee  string `json:"relayer_fee"`
 	ProtocolFee string `json:"protocol_fee"`
+}
+
+// ApiSignedGasSponsorshipInfo contains signed metadata regarding gas sponsorship for a quote
+type ApiSignedGasSponsorshipInfo struct { //nolint:revive
+	// The gas sponsorship info
+	GasSponsorshipInfo ApiGasSponsorshipInfo `json:"gas_sponsorship_info"`
+	// The auth server's signature over the gas sponsorship info
+	Signature string `json:"signature"`
+}
+
+// ApiGasSponsorshipInfo contains metadata regarding gas sponsorship for a quote
+type ApiGasSponsorshipInfo struct { //nolint:revive
+	// The amount to be refunded as a result of gas sponsorship.
+	// This amount is firm, it will not change when the quote is assembled.
+	RefundAmount Amount `json:"refund_amount"`
+	// Whether the refund is in terms of native ETH.
+	RefundNativeETH bool `json:"refund_native_eth"`
+	// The address to which the refund will be sent, if set explicitly.
+	RefundAddress *string `json:"refund_address,omitempty"`
 }

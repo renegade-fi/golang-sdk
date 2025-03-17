@@ -106,13 +106,22 @@ func (c *ExternalMatchClient) GetFeeForAsset(addr *string) (*ExternalMatchFee, e
 func (c *ExternalMatchClient) GetExternalMatchQuote(
 	order *api_types.ApiExternalOrder,
 ) (*api_types.ApiSignedQuote, error) {
+	return c.GetExternalMatchQuoteWithOptions(order, NewExternalQuoteOptions())
+}
+
+// GetExternalMatchQuoteWithOptions requests a quote with the given options struct
+func (c *ExternalMatchClient) GetExternalMatchQuoteWithOptions(
+	order *api_types.ApiExternalOrder,
+	options *ExternalQuoteOptions,
+) (*api_types.ApiSignedQuote, error) {
 	requestBody := api_types.ExternalQuoteRequest{
 		ExternalOrder: *order,
 	}
 
 	var response api_types.ExternalQuoteResponse
+	path := options.BuildRequestPath()
 	success, err := c.doExternalMatchRequest(
-		api_types.GetExternalMatchQuotePath,
+		path,
 		requestBody,
 		&response,
 	)
@@ -123,7 +132,11 @@ func (c *ExternalMatchClient) GetExternalMatchQuote(
 		return nil, nil
 	}
 
-	return &response.Quote, nil
+	return &api_types.ApiSignedQuote{
+		Quote:              response.Quote.Quote,
+		Signature:          response.Quote.Signature,
+		GasSponsorshipInfo: response.GasSponsorshipInfo,
+	}, nil
 }
 
 // AssembleExternalQuote generates an external match bundle from a signed quote
@@ -148,11 +161,16 @@ func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 	quote *api_types.ApiSignedQuote,
 	options *AssembleExternalMatchOptions,
 ) (*ExternalMatchBundle, error) {
+	signedQuote := api_types.SignedQuoteResponse{
+		Quote:     quote.Quote,
+		Signature: quote.Signature,
+	}
 	requestBody := api_types.AssembleExternalQuoteRequest{
-		Quote:           *quote,
-		ReceiverAddress: options.ReceiverAddress,
-		DoGasEstimation: options.DoGasEstimation,
-		UpdatedOrder:    options.UpdatedOrder,
+		Quote:              signedQuote,
+		GasSponsorshipInfo: quote.GasSponsorshipInfo,
+		ReceiverAddress:    options.ReceiverAddress,
+		DoGasEstimation:    options.DoGasEstimation,
+		UpdatedOrder:       options.UpdatedOrder,
 	}
 
 	var response api_types.ExternalMatchResponse
@@ -170,12 +188,13 @@ func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 	}
 
 	return &ExternalMatchBundle{
-		MatchResult:  &response.Bundle.MatchResult,
-		Fees:         &response.Bundle.Fees,
-		Receive:      &response.Bundle.Receive,
-		Send:         &response.Bundle.Send,
-		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
-		GasSponsored: response.GasSponsored,
+		MatchResult:        &response.Bundle.MatchResult,
+		Fees:               &response.Bundle.Fees,
+		Receive:            &response.Bundle.Receive,
+		Send:               &response.Bundle.Send,
+		SettlementTx:       toSettlementTransaction(&response.Bundle.SettlementTx),
+		GasSponsored:       response.GasSponsored,
+		GasSponsorshipInfo: response.GasSponsorshipInfo,
 	}, nil
 }
 

@@ -50,10 +50,12 @@ const (
 	AssembleExternalQuotePath = "/v0/matching-engine/assemble-external-match"
 
 	// --- External Match Query Params --- //
-	// RequestGasSponsorshipParam is the query param used to request gas sponsorship
-	RequestGasSponsorshipParam = "use_gas_sponsorship"
+	// DisableGasSponsorshipParam is the query param used to disable gas sponsorship
+	DisableGasSponsorshipParam = "disable_gas_sponsorship"
 	// GasRefundAddressParam is the query param used to specify the gas refund address
 	GasRefundAddressParam = "refund_address"
+	// RefundNativeEthParam is the query param used to specify whether to refund the gas in native ETH
+	RefundNativeEthParam = "refund_native_eth"
 )
 
 // ScalarLimbs is an array of uint32 limbs
@@ -302,6 +304,8 @@ type ExternalMatchRequest struct {
 type ExternalMatchResponse struct {
 	Bundle       ApiExternalMatchBundle `json:"match_bundle"`
 	GasSponsored bool                   `json:"is_sponsored"`
+	// The gas sponsorship info, if the match was sponsored
+	GasSponsorshipInfo *ApiGasSponsorshipInfo `json:"gas_sponsorship_info,omitempty"`
 }
 
 // ExternalQuoteRequest is a request to fetch an external match quote
@@ -311,17 +315,28 @@ type ExternalQuoteRequest struct {
 
 // ExternalQuoteResponse is the response body for the ExternalQuote action
 type ExternalQuoteResponse struct {
-	Quote ApiSignedQuote `json:"signed_quote"`
+	Quote SignedQuoteResponse `json:"signed_quote"`
+	// The signed gas sponsorship info, if sponsorship was requested
+	GasSponsorshipInfo *ApiSignedGasSponsorshipInfo `json:"gas_sponsorship_info,omitempty"`
 }
 
 // AssembleExternalQuoteRequest is a request to assemble an external match quote
 // into a settlement transaction
 type AssembleExternalQuoteRequest struct {
-	Quote           ApiSignedQuote `json:"signed_quote"`
-	DoGasEstimation bool           `json:"do_gas_estimation"`
+	Quote           SignedQuoteResponse `json:"signed_quote"`
+	DoGasEstimation bool                `json:"do_gas_estimation"`
 	// ReceiverAddress is the address to receive the settlement,
 	// i.e. the address to which the darkpool will send tokens
 	ReceiverAddress *string `json:"receiver_address,omitempty"`
 	// UpdatedOrder is the order to use for the assembly, if different from the quote
 	UpdatedOrder *ApiExternalOrder `json:"updated_order,omitempty"`
+	// GasSponsorshipInfo is the gas sponsorship info applied to the quote, if any
+	GasSponsorshipInfo *ApiSignedGasSponsorshipInfo `json:"gas_sponsorship_info,omitempty"`
+}
+
+// SignedQuoteResponse represents the shape of a signed quote payload directly returned by
+// the auth server's API
+type SignedQuoteResponse struct {
+	Quote     ApiExternalQuote `json:"quote"`
+	Signature string           `json:"signature"`
 }
