@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime/debug"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,7 +27,24 @@ const (
 	signatureHeader         = "x-renegade-auth"
 	expirationHeader        = "x-renegade-auth-expiration"
 	signatureExpiration     = 5 * time.Second
+	versionHeader           = "x-renegade-sdk-version"
 )
+
+// getVersion returns the version of the package
+func getVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "golang-unknown"
+	}
+
+	// Look for our module in the dependencies
+	for _, dep := range info.Deps {
+		if dep.Path == "github.com/renegade-fi/golang-sdk" {
+			return fmt.Sprintf("golang-v%s", dep.Version)
+		}
+	}
+	return "golang-unknown"
+}
 
 // HttpClient represents an HTTP client with a base URL and auth key
 type HttpClient struct { //nolint:revive
@@ -167,6 +185,7 @@ func (c *HttpClient) doRequestWithStatus(
 		req.Header = *headers
 	}
 	req.Header.Set(contentTypeHeader, contentTypeJSON)
+	req.Header.Set(versionHeader, getVersion())
 	if withAuth {
 		c.addAuth(req, bodyBytes)
 	}
