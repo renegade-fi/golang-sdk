@@ -166,11 +166,10 @@ func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 		Signature: quote.Signature,
 	}
 	requestBody := api_types.AssembleExternalQuoteRequest{
-		Quote:              signedQuote,
-		GasSponsorshipInfo: quote.GasSponsorshipInfo,
-		ReceiverAddress:    options.ReceiverAddress,
-		DoGasEstimation:    options.DoGasEstimation,
-		UpdatedOrder:       options.UpdatedOrder,
+		Quote:           signedQuote,
+		ReceiverAddress: options.ReceiverAddress,
+		DoGasEstimation: options.DoGasEstimation,
+		UpdatedOrder:    options.UpdatedOrder,
 	}
 
 	var response api_types.ExternalMatchResponse

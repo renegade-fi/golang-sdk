@@ -189,6 +189,8 @@ type ApiSignedGasSponsorshipInfo struct { //nolint:revive
 	// The gas sponsorship info
 	GasSponsorshipInfo ApiGasSponsorshipInfo `json:"gas_sponsorship_info"`
 	// The auth server's signature over the gas sponsorship info
+	//
+	// Deprecated: Gas sponsorship info is no longer signed
 	Signature string `json:"signature"`
 }
 
