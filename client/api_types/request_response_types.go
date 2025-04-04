@@ -330,8 +330,6 @@ type AssembleExternalQuoteRequest struct {
 	ReceiverAddress *string `json:"receiver_address,omitempty"`
 	// UpdatedOrder is the order to use for the assembly, if different from the quote
 	UpdatedOrder *ApiExternalOrder `json:"updated_order,omitempty"`
-	// GasSponsorshipInfo is the gas sponsorship info applied to the quote, if any
-	GasSponsorshipInfo *ApiSignedGasSponsorshipInfo `json:"gas_sponsorship_info,omitempty"`
 }
 
 // SignedQuoteResponse represents the shape of a signed quote payload directly returned by
