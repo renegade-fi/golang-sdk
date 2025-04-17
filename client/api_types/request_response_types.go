@@ -325,6 +325,7 @@ type ExternalQuoteResponse struct {
 type AssembleExternalQuoteRequest struct {
 	Quote           SignedQuoteResponse `json:"signed_quote"`
 	DoGasEstimation bool                `json:"do_gas_estimation"`
+	AllowShared     bool                `json:"allow_shared"`
 	// ReceiverAddress is the address to receive the settlement,
 	// i.e. the address to which the darkpool will send tokens
 	ReceiverAddress *string `json:"receiver_address,omitempty"`

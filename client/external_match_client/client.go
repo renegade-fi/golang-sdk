@@ -170,6 +170,7 @@ func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 		ReceiverAddress: options.ReceiverAddress,
 		DoGasEstimation: options.DoGasEstimation,
 		UpdatedOrder:    options.UpdatedOrder,
+		AllowShared:     options.AllowShared,
 	}
 
 	var response api_types.ExternalMatchResponse

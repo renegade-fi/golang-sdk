@@ -147,7 +147,14 @@ func NewExternalQuoteOptions() *ExternalQuoteOptions {
 type AssembleExternalMatchOptions struct {
 	ReceiverAddress *string
 	DoGasEstimation bool
-	UpdatedOrder    *api_types.ApiExternalOrder
+	// AllowShared is a flag to allow the assembly of a shared quote
+	//
+	// If true, the relayer will not enforce exclusive access to the bundle returned in the
+	// assemble step. I.e. the relayer may send the same bundle to another client.
+	//
+	// This affords the client a much higher rate limit
+	AllowShared  bool
+	UpdatedOrder *api_types.ApiExternalOrder
 	// RequestGasSponsorship is a flag to request gas sponsorship for the settlement tx
 	//
 	// This is subject to rate limit by the auth server, but if approved will refund the gas spent
@@ -173,6 +180,12 @@ func (o *AssembleExternalMatchOptions) WithReceiverAddress(address *string) *Ass
 // WithGasEstimation sets whether to perform gas estimation
 func (o *AssembleExternalMatchOptions) WithGasEstimation(estimate bool) *AssembleExternalMatchOptions {
 	o.DoGasEstimation = estimate
+	return o
+}
+
+// WithAllowShared sets whether to allow the assembly of a shared quote
+func (o *AssembleExternalMatchOptions) WithAllowShared(allowShared bool) *AssembleExternalMatchOptions {
+	o.AllowShared = allowShared
 	return o
 }
 
