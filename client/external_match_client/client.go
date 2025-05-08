@@ -12,11 +12,11 @@ import (
 
 //nolint:revive
 const (
-	testnetBaseUrl        = "https://testnet.auth-server.renegade.fi:3000"
-	testnetRelayerBaseUrl = "https://testnet.cluster0.renegade.fi:3000"
-	mainnetBaseUrl        = "https://mainnet.auth-server.renegade.fi:3000"
-	mainnetRelayerBaseUrl = "https://mainnet.cluster0.renegade.fi:3000"
-	apiKeyHeader          = "X-Renegade-Api-Key" //nolint:gosec
+	arbitrumSepoliaBaseUrl        = "https://arbitrum-sepolia.auth-server.renegade.fi:3000"
+	arbitrumSepoliaRelayerBaseUrl = "https://arbitrum-sepolia.relayer.renegade.fi:3000"
+	arbitrumOneBaseUrl            = "https://arbitrum-one.auth-server.renegade.fi:3000"
+	arbitrumOneRelayerBaseUrl     = "https://arbitrum-one.relayer.renegade.fi:3000"
+	apiKeyHeader                  = "X-Renegade-Api-Key" //nolint:gosec
 )
 
 // -------------------------
@@ -33,14 +33,28 @@ type ExternalMatchClient struct {
 	relayerHttpClient *client.HttpClient //nolint:revive
 }
 
-// NewTestnetExternalMatchClient creates a new ExternalMatchClient for the testnet
-func NewTestnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
-	return NewExternalMatchClient(testnetBaseUrl, testnetRelayerBaseUrl, apiKey, apiSecret)
+// NewArbitrumSepoliaExternalMatchClient creates a new ExternalMatchClient for the Arbitrum Sepolia network
+func NewArbitrumSepoliaExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+	return NewExternalMatchClient(arbitrumSepoliaBaseUrl, arbitrumSepoliaRelayerBaseUrl, apiKey, apiSecret)
 }
 
-// NewMainnetExternalMatchClient creates a new ExternalMatchClient for the mainnet
+// NewTestnetExternalMatchClient creates a new ExternalMatchClient for the Arbitrum Sepolia network
+//
+// Deprecated: Use NewArbitrumSepoliaExternalMatchClient instead
+func NewTestnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+	return NewArbitrumSepoliaExternalMatchClient(apiKey, apiSecret)
+}
+
+// NewArbitrumOneExternalMatchClient creates a new ExternalMatchClient for the Arbitrum One network
+func NewArbitrumOneExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+	return NewExternalMatchClient(arbitrumOneBaseUrl, arbitrumOneRelayerBaseUrl, apiKey, apiSecret)
+}
+
+// NewMainnetExternalMatchClient creates a new ExternalMatchClient for the Arbitrum One network
+//
+// Deprecated: Use NewArbitrumOneExternalMatchClient instead
 func NewMainnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
-	return NewExternalMatchClient(mainnetBaseUrl, mainnetRelayerBaseUrl, apiKey, apiSecret)
+	return NewArbitrumOneExternalMatchClient(apiKey, apiSecret)
 }
 
 // NewExternalMatchClient creates a new ExternalMatchClient with the given base

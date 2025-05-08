@@ -40,7 +40,7 @@ func main() {
 		panic(err)
 	}
 
-	externalMatchClient := external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey)
+	externalMatchClient := external_match_client.NewArbitrumSepoliaExternalMatchClient(apiKey, &apiSecretKey)
 
 	// Request an external match
 	// We can denominate the order size in either the quote or base token with
