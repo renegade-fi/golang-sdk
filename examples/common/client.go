@@ -22,7 +22,7 @@ func CreateExternalMatchClient() (*external_match_client.ExternalMatchClient, er
 		return nil, fmt.Errorf("failed to parse API secret: %w", err)
 	}
 
-	return external_match_client.NewTestnetExternalMatchClient(apiKey, &apiSecretKey), nil
+	return external_match_client.NewArbitrumSepoliaExternalMatchClient(apiKey, &apiSecretKey), nil
 }
 
 // FindTokenAddr fetches the address of a token from the relayer
