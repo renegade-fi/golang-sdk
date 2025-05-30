@@ -16,11 +16,17 @@ import (
 
 const (
 	// ChainID is the chain ID for the testnet
-	ChainID = 421614
+	ArbitrumSepoliaChainID = 421614
+	BaseSepoliaChainID     = 84532
 )
 
-// SubmitBundle submits the bundle to the sequencer
+// SubmitBundle submits the bundle to the Arbitrum Sepolia network
 func SubmitBundle(bundle external_match_client.ExternalMatchBundle) error {
+	return SubmitBundleWithChainID(bundle, ArbitrumSepoliaChainID)
+}
+
+// SubmitBundle submits the bundle with the given chain ID
+func SubmitBundleWithChainID(bundle external_match_client.ExternalMatchBundle, chainID int64) error {
 	ethClient, err := GetEthClient()
 	if err != nil {
 		return fmt.Errorf("failed to create eth client: %w", err)
@@ -42,7 +48,7 @@ func SubmitBundle(bundle external_match_client.ExternalMatchBundle) error {
 	}
 
 	ethTx := types.NewTx(&types.DynamicFeeTx{
-		ChainID:   big.NewInt(ChainID),
+		ChainID:   big.NewInt(chainID),
 		Nonce:     nonce,
 		GasTipCap: gasPrice,
 		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)),
@@ -52,7 +58,7 @@ func SubmitBundle(bundle external_match_client.ExternalMatchBundle) error {
 		Data:      []byte(bundle.SettlementTx.Data),
 	})
 
-	signer := types.LatestSignerForChainID(big.NewInt(ChainID))
+	signer := types.LatestSignerForChainID(big.NewInt(chainID))
 	signedTx, err := types.SignTx(ethTx, signer, privateKey)
 	if err != nil {
 		return fmt.Errorf("failed to sign transaction: %w", err)

@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	client, err := common.CreateArbitrumExternalMatchClient()
+	client, err := common.CreateBaseExternalMatchClient()
 	if err != nil {
 		panic(err)
 	}
@@ -24,6 +24,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("quoteMint", quoteMint)
+	fmt.Println("baseMint", baseMint)
 
 	// Create order for 20 USDC worth of WETH
 	quoteAmount := new(big.Int).SetUint64(20_000_000) // $20 USDC
@@ -71,7 +73,7 @@ func getQuoteAndSubmit(order *api_types.ApiExternalOrder, client *external_match
 
 	// 3. Submit the bundle
 	fmt.Println("Submitting bundle...")
-	if err := common.SubmitBundle(*bundle); err != nil {
+	if err := common.SubmitBundleWithChainID(*bundle, common.BaseSepoliaChainID); err != nil {
 		return fmt.Errorf("failed to submit bundle: %w", err)
 	}
 
