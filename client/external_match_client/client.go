@@ -16,6 +16,10 @@ const (
 	arbitrumSepoliaRelayerBaseUrl = "https://arbitrum-sepolia.relayer.renegade.fi:3000"
 	arbitrumOneBaseUrl            = "https://arbitrum-one.auth-server.renegade.fi:3000"
 	arbitrumOneRelayerBaseUrl     = "https://arbitrum-one.relayer.renegade.fi:3000"
+	baseSepoliaBaseUrl            = "https://base-sepolia.auth-server.renegade.fi:3000"
+	baseSepoliaRelayerBaseUrl     = "https://base-sepolia.relayer.renegade.fi:3000"
+	baseMainnetBaseUrl            = "https://base-mainnet.auth-server.renegade.fi:3000"
+	baseMainnetRelayerBaseUrl     = "https://base-mainnet.relayer.renegade.fi:3000"
 	apiKeyHeader                  = "X-Renegade-Api-Key" //nolint:gosec
 )
 
@@ -38,6 +42,11 @@ func NewArbitrumSepoliaExternalMatchClient(apiKey string, apiSecret *wallet.Hmac
 	return NewExternalMatchClient(arbitrumSepoliaBaseUrl, arbitrumSepoliaRelayerBaseUrl, apiKey, apiSecret)
 }
 
+// NewBaseSepoliaExternalMatchClient creates a new ExternalMatchClient for the Base Sepolia network
+func NewBaseSepoliaExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+	return NewExternalMatchClient(baseSepoliaBaseUrl, baseSepoliaRelayerBaseUrl, apiKey, apiSecret)
+}
+
 // NewTestnetExternalMatchClient creates a new ExternalMatchClient for the Arbitrum Sepolia network
 //
 // Deprecated: Use NewArbitrumSepoliaExternalMatchClient instead
@@ -48,6 +57,11 @@ func NewTestnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *Ex
 // NewArbitrumOneExternalMatchClient creates a new ExternalMatchClient for the Arbitrum One network
 func NewArbitrumOneExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
 	return NewExternalMatchClient(arbitrumOneBaseUrl, arbitrumOneRelayerBaseUrl, apiKey, apiSecret)
+}
+
+// NewBaseMainnetExternalMatchClient creates a new ExternalMatchClient for the Base Mainnet network
+func NewBaseMainnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+	return NewExternalMatchClient(baseMainnetBaseUrl, baseMainnetRelayerBaseUrl, apiKey, apiSecret)
 }
 
 // NewMainnetExternalMatchClient creates a new ExternalMatchClient for the Arbitrum One network

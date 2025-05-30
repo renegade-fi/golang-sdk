@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	client, err := common.CreateExternalMatchClient()
+	client, err := common.CreateArbitrumExternalMatchClient()
 	if err != nil {
 		panic(err)
 	}
