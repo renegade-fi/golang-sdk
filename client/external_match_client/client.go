@@ -228,8 +228,6 @@ func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 
 // GetExternalMatchBundle requests an external match bundle from the relayer
 // returns nil if no match is found
-//
-// Deprecated: Use the quote + assemble methods instead
 func (c *ExternalMatchClient) GetExternalMatchBundle(
 	request *api_types.ApiExternalOrder,
 ) (*ExternalMatchBundle, error) {
@@ -238,15 +236,14 @@ func (c *ExternalMatchClient) GetExternalMatchBundle(
 
 // GetExternalMatchBundleWithReceiver requests an external match bundle from the relayer
 // returns nil if no match is found
-//
-// Deprecated: Use the quote + assemble methods instead
 func (c *ExternalMatchClient) GetExternalMatchBundleWithReceiver(
 	request *api_types.ApiExternalOrder,
 	receiverAddress *string,
 ) (*ExternalMatchBundle, error) {
 	options := &ExternalMatchOptions{
 		AssembleExternalMatchOptions: AssembleExternalMatchOptions{
-			ReceiverAddress: receiverAddress,
+			ReceiverAddress:       receiverAddress,
+			RequestGasSponsorship: true, // default to true
 		},
 	}
 	return c.GetExternalMatchBundleWithOptions(request, options)
@@ -254,8 +251,6 @@ func (c *ExternalMatchClient) GetExternalMatchBundleWithReceiver(
 
 // GetExternalMatchBundleWithOptions requests an external match bundle from the relayer with the given options
 // returns nil if no match is found
-//
-// Deprecated: Use the quote + assemble methods instead
 func (c *ExternalMatchClient) GetExternalMatchBundleWithOptions(
 	request *api_types.ApiExternalOrder,
 	options *ExternalMatchOptions,
