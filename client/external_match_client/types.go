@@ -147,12 +147,7 @@ func NewExternalQuoteOptions() *ExternalQuoteOptions {
 type AssembleExternalMatchOptions struct {
 	ReceiverAddress *string
 	DoGasEstimation bool
-	// AllowShared is a flag to allow the assembly of a shared quote
-	//
-	// If true, the relayer will not enforce exclusive access to the bundle returned in the
-	// assemble step. I.e. the relayer may send the same bundle to another client.
-	//
-	// This affords the client a much higher rate limit
+	// Deprecated: Shared bundles are no longer supported
 	AllowShared  bool
 	UpdatedOrder *api_types.ApiExternalOrder
 	// RequestGasSponsorship is a flag to request gas sponsorship for the settlement tx
@@ -160,8 +155,6 @@ type AssembleExternalMatchOptions struct {
 	// This is subject to rate limit by the auth server, but if approved will refund the gas spent
 	// on the settlement tx to the address specified in `GasRefundAddress`. If no refund address is
 	// specified, the refund is directed to `tx.origin`
-	//
-	// Deprecated: Request gas sponsorship when requesting a quote
 	RequestGasSponsorship bool
 	// GasRefundAddress is the address to refund the gas to
 	//
@@ -227,15 +220,14 @@ func (o *AssembleExternalMatchOptions) BuildRequestPath() string {
 // NewAssembleExternalMatchOptions creates a new AssembleExternalMatchOptions with default values
 func NewAssembleExternalMatchOptions() *AssembleExternalMatchOptions {
 	return &AssembleExternalMatchOptions{
-		ReceiverAddress: nil,
-		DoGasEstimation: false,
-		UpdatedOrder:    nil,
+		ReceiverAddress:       nil,
+		DoGasEstimation:       false,
+		UpdatedOrder:          nil,
+		RequestGasSponsorship: true,
 	}
 }
 
 // ExternalMatchOptions represents the options for an external match request
-//
-// Deprecated: Use AssembleExternalMatchOptions instead
 type ExternalMatchOptions struct {
 	AssembleExternalMatchOptions
 }
