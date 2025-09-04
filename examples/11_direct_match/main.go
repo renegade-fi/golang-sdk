@@ -32,9 +32,9 @@ func main() {
 	order, err := api_types.NewExternalOrderBuilder().
 		WithQuoteMint(quoteMint).
 		WithBaseMint(baseMint).
-		WithQuoteAmount(api_types.Amount(*quoteAmount)).
+		WithQuoteAmount(quoteAmount).
 		WithSide("Buy").
-		WithMinFillSize(api_types.Amount(*minFillSize)).
+		WithMinFillSize(minFillSize).
 		Build()
 	if err != nil {
 		panic(err)
@@ -61,7 +61,7 @@ func getMatchAndSubmit(order *api_types.ApiExternalOrder, client *external_match
 
 	// 2. Submit the bundle
 	fmt.Println("Submitting bundle...")
-	if err := common.SubmitBundle(*bundle); err != nil {
+	if err := common.SubmitBundle(bundle); err != nil {
 		return fmt.Errorf("failed to submit bundle: %w", err)
 	}
 
