@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	geth_common "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/renegade-fi/golang-sdk/client/api_types"
 )
@@ -36,6 +37,7 @@ type SettlementTransaction struct {
 	To    geth_common.Address
 	Data  []byte
 	Value *big.Int
+	Gas   uint64
 }
 
 // toSettlementTransaction converts an ApiSettlementTransaction to a SettlementTransaction
@@ -46,11 +48,22 @@ func toSettlementTransaction(tx *api_types.ApiSettlementTransaction) *Settlement
 	valueBytes := geth_common.FromHex(tx.Value)
 	value := big.NewInt(0).SetBytes(valueBytes)
 
+	// Parse gas from hex string
+	var gas uint64
+	if tx.Gas != "" {
+		decoded, err := hexutil.DecodeUint64(tx.Gas)
+		if err == nil {
+			gas = decoded
+		}
+		// If decode fails, gas remains 0
+	}
+
 	return &SettlementTransaction{
 		Type:  tx.Type,
 		To:    to,
 		Data:  data,
 		Value: value,
+		Gas:   gas,
 	}
 }
 
