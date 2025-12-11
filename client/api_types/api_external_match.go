@@ -176,6 +176,7 @@ type ApiSettlementTransaction struct { //nolint:revive
 	To    string `json:"to"`
 	Data  string `json:"data"`
 	Value string `json:"value"`
+	Gas   string `json:"gas"`
 }
 
 // ApiExternalMatchFee represents the fees for a given asset in external matches

@@ -52,7 +52,7 @@ func SubmitBundleWithChainID(bundle external_match_client.ExternalMatchBundle, c
 		Nonce:     nonce,
 		GasTipCap: gasPrice,
 		GasFeeCap: new(big.Int).Mul(gasPrice, big.NewInt(2)),
-		Gas:       uint64(10_000_000),
+		Gas:       getGasLimit(bundle.SettlementTx.Gas),
 		To:        &bundle.SettlementTx.To,
 		Value:     bundle.SettlementTx.Value,
 		Data:      []byte(bundle.SettlementTx.Data),
@@ -90,4 +90,15 @@ func GetPrivateKey() (*ecdsa.PrivateKey, error) {
 	}
 
 	return crypto.HexToECDSA(privKeyHex)
+}
+
+// getGasLimit returns the gas limit to use for the transaction
+// If the bundle contains a gas estimate, it uses that value with 20% buffer
+// Otherwise, it returns a default fallback value
+func getGasLimit(estimatedGas uint64) uint64 {
+	if estimatedGas > 0 {
+		return estimatedGas * 120 / 100
+	}
+	// Fallback to a safe default if no gas estimate is provided
+	return uint64(10_000_000)
 }
