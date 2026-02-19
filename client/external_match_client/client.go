@@ -12,14 +12,16 @@ import (
 
 //nolint:revive
 const (
-	arbitrumSepoliaBaseUrl        = "https://arbitrum-sepolia.auth-server.renegade.fi:3000"
-	arbitrumSepoliaRelayerBaseUrl = "https://arbitrum-sepolia.relayer.renegade.fi:3000"
-	arbitrumOneBaseUrl            = "https://arbitrum-one.auth-server.renegade.fi:3000"
-	arbitrumOneRelayerBaseUrl     = "https://arbitrum-one.relayer.renegade.fi:3000"
-	baseSepoliaBaseUrl            = "https://base-sepolia.auth-server.renegade.fi:3000"
-	baseSepoliaRelayerBaseUrl     = "https://base-sepolia.relayer.renegade.fi:3000"
-	baseMainnetBaseUrl            = "https://base-mainnet.auth-server.renegade.fi:3000"
-	baseMainnetRelayerBaseUrl     = "https://base-mainnet.relayer.renegade.fi:3000"
+	arbitrumSepoliaBaseUrl        = "https://arbitrum-sepolia.v2.auth-server.renegade.fi"
+	arbitrumSepoliaRelayerBaseUrl = "https://arbitrum-sepolia.v2.relayer.renegade.fi"
+	arbitrumOneBaseUrl            = "https://arbitrum-one.v2.auth-server.renegade.fi"
+	arbitrumOneRelayerBaseUrl     = "https://arbitrum-one.v2.relayer.renegade.fi"
+	baseSepoliaBaseUrl            = "https://base-sepolia.v2.auth-server.renegade.fi"
+	baseSepoliaRelayerBaseUrl     = "https://base-sepolia.v2.relayer.renegade.fi"
+	baseMainnetBaseUrl            = "https://base-mainnet.v2.auth-server.renegade.fi"
+	baseMainnetRelayerBaseUrl     = "https://base-mainnet.v2.relayer.renegade.fi"
+	ethereumSepoliaBaseUrl        = "https://ethereum-sepolia.v2.auth-server.renegade.fi"
+	ethereumSepoliaRelayerBaseUrl = "https://ethereum-sepolia.v2.relayer.renegade.fi"
 	apiKeyHeader                  = "X-Renegade-Api-Key" //nolint:gosec
 )
 
@@ -71,6 +73,11 @@ func NewMainnetExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *Ex
 	return NewArbitrumOneExternalMatchClient(apiKey, apiSecret)
 }
 
+// NewEthereumSepoliaExternalMatchClient creates a new ExternalMatchClient for the Ethereum Sepolia network
+func NewEthereumSepoliaExternalMatchClient(apiKey string, apiSecret *wallet.HmacKey) *ExternalMatchClient {
+	return NewExternalMatchClient(ethereumSepoliaBaseUrl, ethereumSepoliaRelayerBaseUrl, apiKey, apiSecret)
+}
+
 // NewExternalMatchClient creates a new ExternalMatchClient with the given base
 // URL, api key, and api secret
 func NewExternalMatchClient(
@@ -86,15 +93,15 @@ func NewExternalMatchClient(
 	}
 }
 
-// ----------------
-// | Metadata API |
-// ----------------
+// ----------------------
+// | V2 Market Data API |
+// ----------------------
 
-// GetSupportedTokens requests the list of supported tokens from the relayer
-func (c *ExternalMatchClient) GetSupportedTokens() ([]api_types.ApiToken, error) {
-	var response api_types.GetSupportedTokensResponse
+// GetMarkets fetches all tradable markets with their prices and fee rates
+func (c *ExternalMatchClient) GetMarkets() (*api_types.GetMarketsResponse, error) {
+	var response api_types.GetMarketsResponse
 	err := c.relayerHttpClient.GetJSON(
-		api_types.GetSupportedTokensPath,
+		api_types.GetMarketsPath,
 		nil, // body
 		&response,
 	)
@@ -102,51 +109,77 @@ func (c *ExternalMatchClient) GetSupportedTokens() ([]api_types.ApiToken, error)
 		return nil, err
 	}
 
-	return response.Tokens, nil
+	return &response, nil
 }
 
-// GetFeeForAsset requests the fees for a given base token
-func (c *ExternalMatchClient) GetFeeForAsset(addr *string) (*ExternalMatchFee, error) {
-	var response api_types.ApiExternalMatchFee
-	err := c.relayerHttpClient.GetJSON(
-		api_types.BuildGetFeeForAssetPath(*addr),
-		nil, // body
-		&response,
-	)
+// GetMarketDepth fetches the market depth for a specific token
+func (c *ExternalMatchClient) GetMarketDepth(mint string) (*api_types.GetMarketDepthByMintResponse, error) {
+	var response api_types.GetMarketDepthByMintResponse
+	path := api_types.BuildGetMarketDepthByMintPath(mint)
+
+	headers := make(http.Header)
+	headers.Set(apiKeyHeader, c.apiKey)
+
+	err := c.httpClient.GetWithAuthAndHeaders(path, &headers, nil, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	parsedFee, err := toExternalMatchFee(&response)
+	return &response, nil
+}
+
+// GetMarketDepthsAllPairs fetches the market depths for all supported pairs
+func (c *ExternalMatchClient) GetMarketDepthsAllPairs() (*api_types.GetMarketDepthsResponse, error) {
+	var response api_types.GetMarketDepthsResponse
+
+	headers := make(http.Header)
+	headers.Set(apiKeyHeader, c.apiKey)
+
+	err := c.httpClient.GetWithAuthAndHeaders(api_types.GetMarketsDepthPath, &headers, nil, &response)
 	if err != nil {
 		return nil, err
 	}
 
-	return parsedFee, nil
+	return &response, nil
 }
 
-// ------------------------
-// | Quote + Assembly API |
-// ------------------------
+// GetExchangeMetadata fetches metadata about the Renegade exchange
+func (c *ExternalMatchClient) GetExchangeMetadata() (*api_types.ExchangeMetadataResponse, error) {
+	var response api_types.ExchangeMetadataResponse
 
-// GetExternalMatchQuote requests a quote from the relayer
+	headers := make(http.Header)
+	headers.Set(apiKeyHeader, c.apiKey)
+
+	err := c.httpClient.GetWithAuthAndHeaders(api_types.GetExchangeMetadataPath, &headers, nil, &response)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}
+
+// --------------------------
+// | V2 Quote + Assembly API |
+// --------------------------
+
+// GetExternalMatchQuoteV2 requests a v2 quote from the relayer
 // returns nil if no match is found
-func (c *ExternalMatchClient) GetExternalMatchQuote(
-	order *api_types.ApiExternalOrder,
-) (*api_types.ApiSignedQuote, error) {
-	return c.GetExternalMatchQuoteWithOptions(order, NewExternalQuoteOptions())
+func (c *ExternalMatchClient) GetExternalMatchQuoteV2(
+	order *api_types.ApiExternalOrderV2,
+) (*SignedExternalQuoteV2, error) {
+	return c.GetExternalMatchQuoteWithOptionsV2(order, NewExternalQuoteOptions())
 }
 
-// GetExternalMatchQuoteWithOptions requests a quote with the given options struct
-func (c *ExternalMatchClient) GetExternalMatchQuoteWithOptions(
-	order *api_types.ApiExternalOrder,
+// GetExternalMatchQuoteWithOptionsV2 requests a v2 quote with options
+func (c *ExternalMatchClient) GetExternalMatchQuoteWithOptionsV2(
+	order *api_types.ApiExternalOrderV2,
 	options *ExternalQuoteOptions,
-) (*api_types.ApiSignedQuote, error) {
-	requestBody := api_types.ExternalQuoteRequest{
+) (*SignedExternalQuoteV2, error) {
+	requestBody := api_types.ExternalQuoteRequestV2{
 		ExternalOrder: *order,
 	}
 
-	var response api_types.ExternalQuoteResponse
+	var response api_types.ExternalQuoteResponseV2
 	path := options.BuildRequestPath()
 	success, err := c.doExternalMatchRequest(
 		path,
@@ -160,21 +193,151 @@ func (c *ExternalMatchClient) GetExternalMatchQuoteWithOptions(
 		return nil, nil
 	}
 
-	return &api_types.ApiSignedQuote{
-		Quote:              response.Quote.Quote,
-		Signature:          response.Quote.Signature,
-		GasSponsorshipInfo: response.GasSponsorshipInfo,
-	}, nil
+	return NewSignedExternalQuoteV2(&response), nil
 }
 
-// AssembleExternalQuote generates an external match bundle from a signed quote
+// AssembleExternalQuoteV2 assembles a v2 quote into a malleable match bundle
+// returns nil if no match is found
+func (c *ExternalMatchClient) AssembleExternalQuoteV2(
+	quote *SignedExternalQuoteV2,
+) (*MalleableExternalMatchBundle, error) {
+	return c.AssembleExternalQuoteWithOptionsV2(quote, NewAssembleExternalMatchOptionsV2())
+}
+
+// AssembleExternalQuoteWithOptionsV2 assembles a v2 quote with options
+func (c *ExternalMatchClient) AssembleExternalQuoteWithOptionsV2(
+	quote *SignedExternalQuoteV2,
+	options *AssembleExternalMatchOptionsV2,
+) (*MalleableExternalMatchBundle, error) {
+	signedQuote := quote.ToApiSignedQuote()
+	assemblyOrder := api_types.NewQuotedOrderAssembly(&signedQuote, options.UpdatedOrder)
+
+	requestBody := api_types.AssembleExternalMatchRequestV2{
+		DoGasEstimation: options.DoGasEstimation,
+		ReceiverAddress: options.ReceiverAddress,
+		Order:           assemblyOrder,
+	}
+
+	var response api_types.ExternalMatchResponseV2
+	path := api_types.AssembleMatchBundleV2Path
+	success, err := c.doExternalMatchRequest(
+		path,
+		requestBody,
+		&response,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !success {
+		return nil, nil
+	}
+
+	return newMalleableExternalMatchBundle(&response), nil
+}
+
+// GetExternalMatchBundleV2 requests a v2 match bundle (direct match)
+// returns nil if no match is found
+func (c *ExternalMatchClient) GetExternalMatchBundleV2(
+	order *api_types.ApiExternalOrderV2,
+) (*MalleableExternalMatchBundle, error) {
+	return c.GetExternalMatchBundleWithOptionsV2(order, NewExternalMatchOptionsV2())
+}
+
+// GetExternalMatchBundleWithOptionsV2 requests a v2 match bundle with options
+func (c *ExternalMatchClient) GetExternalMatchBundleWithOptionsV2(
+	order *api_types.ApiExternalOrderV2,
+	options *ExternalMatchOptionsV2,
+) (*MalleableExternalMatchBundle, error) {
+	assemblyOrder := api_types.NewDirectOrderAssembly(order)
+
+	requestBody := api_types.AssembleExternalMatchRequestV2{
+		DoGasEstimation: options.DoGasEstimation,
+		ReceiverAddress: options.ReceiverAddress,
+		Order:           assemblyOrder,
+	}
+
+	var response api_types.ExternalMatchResponseV2
+	path := options.BuildRequestPath()
+	success, err := c.doExternalMatchRequest(
+		path,
+		requestBody,
+		&response,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if !success {
+		return nil, nil
+	}
+
+	return newMalleableExternalMatchBundle(&response), nil
+}
+
+// ----------------------------
+// | V1 Deprecated Shim APIs |
+// ----------------------------
+
+// GetSupportedTokens requests the list of supported tokens from the relayer
+//
+// Deprecated: Use GetMarkets instead, which returns all supported tokens along with their current price
+func (c *ExternalMatchClient) GetSupportedTokens() ([]api_types.ApiToken, error) {
+	resp, err := c.GetMarkets()
+	if err != nil {
+		return nil, err
+	}
+
+	return marketsToSupportedTokens(resp), nil
+}
+
+// GetFeeForAsset requests the fees for a given base token
+//
+// Deprecated: Use GetMarkets instead
+func (c *ExternalMatchClient) GetFeeForAsset(addr *string) (*ExternalMatchFee, error) {
+	resp, err := c.GetMarkets()
+	if err != nil {
+		return nil, err
+	}
+
+	return marketsToFeeForAsset(resp, *addr)
+}
+
+// GetExternalMatchQuote requests a quote from the relayer (v1 shim)
+// returns nil if no match is found
+func (c *ExternalMatchClient) GetExternalMatchQuote(
+	order *api_types.ApiExternalOrder,
+) (*api_types.ApiSignedQuote, error) {
+	return c.GetExternalMatchQuoteWithOptions(order, NewExternalQuoteOptions())
+}
+
+// GetExternalMatchQuoteWithOptions requests a quote with the given options struct (v1 shim)
+func (c *ExternalMatchClient) GetExternalMatchQuoteWithOptions(
+	order *api_types.ApiExternalOrder,
+	options *ExternalQuoteOptions,
+) (*api_types.ApiSignedQuote, error) {
+	// Convert v1 order to v2
+	v2Order := v1OrderToV2(order)
+
+	// Call v2 method
+	v2Quote, err := c.GetExternalMatchQuoteWithOptionsV2(&v2Order, options)
+	if err != nil {
+		return nil, err
+	}
+	if v2Quote == nil {
+		return nil, nil
+	}
+
+	// Convert v2 quote to v1
+	return v2QuoteToV1(v2Quote, order)
+}
+
+// AssembleExternalQuote generates an external match bundle from a signed quote (v1 shim)
 func (c *ExternalMatchClient) AssembleExternalQuote(
 	quote *api_types.ApiSignedQuote,
 ) (*ExternalMatchBundle, error) {
 	return c.AssembleExternalQuoteWithReceiver(quote, nil /* receiverAddress */)
 }
 
-// AssembleExternalQuoteWithReceiver generates an external match bundle from a signed quote
+// AssembleExternalQuoteWithReceiver generates an external match bundle from a signed quote (v1 shim)
 // returns nil if no match is found
 func (c *ExternalMatchClient) AssembleExternalQuoteWithReceiver(
 	quote *api_types.ApiSignedQuote,
@@ -184,49 +347,36 @@ func (c *ExternalMatchClient) AssembleExternalQuoteWithReceiver(
 	return c.AssembleExternalMatchWithOptions(quote, options)
 }
 
-// AssembleExternalMatchWithOptions assembles an external quote with the given options struct
+// AssembleExternalMatchWithOptions assembles an external quote with the given options struct (v1 shim)
 func (c *ExternalMatchClient) AssembleExternalMatchWithOptions(
 	quote *api_types.ApiSignedQuote,
 	options *AssembleExternalMatchOptions,
 ) (*ExternalMatchBundle, error) {
-	signedQuote := api_types.SignedQuoteResponse{
-		Quote:     quote.Quote,
-		Signature: quote.Signature,
-	}
-	requestBody := api_types.AssembleExternalQuoteRequest{
-		Quote:           signedQuote,
-		ReceiverAddress: options.ReceiverAddress,
-		DoGasEstimation: options.DoGasEstimation,
-		UpdatedOrder:    options.UpdatedOrder,
-		AllowShared:     options.AllowShared,
-	}
+	direction := quote.Quote.Order.Side
 
-	var response api_types.ExternalMatchResponse
-	path := options.BuildRequestPath()
-	success, err := c.doExternalMatchRequest(
-		path,
-		requestBody,
-		&response,
-	)
+	// Extract the v2 quote from the v1 quote
+	v2Quote, err := v1QuoteToV2(quote)
 	if err != nil {
 		return nil, err
 	}
-	if !success {
+
+	// Convert v1 options to v2
+	v2Options := v1AssembleOptionsToV2(options, &quote.Quote.Order)
+
+	// Call v2 method
+	v2Resp, err := c.AssembleExternalQuoteWithOptionsV2(v2Quote, v2Options)
+	if err != nil {
+		return nil, err
+	}
+	if v2Resp == nil {
 		return nil, nil
 	}
 
-	return &ExternalMatchBundle{
-		MatchResult:        &response.Bundle.MatchResult,
-		Fees:               &response.Bundle.Fees,
-		Receive:            &response.Bundle.Receive,
-		Send:               &response.Bundle.Send,
-		SettlementTx:       toSettlementTransaction(&response.Bundle.SettlementTx),
-		GasSponsored:       response.GasSponsored,
-		GasSponsorshipInfo: response.GasSponsorshipInfo,
-	}, nil
+	// Convert v2 response to v1
+	return v2MalleableBundleToV1(v2Resp, direction)
 }
 
-// GetExternalMatchBundle requests an external match bundle from the relayer
+// GetExternalMatchBundle requests an external match bundle from the relayer (v1 shim)
 // returns nil if no match is found
 func (c *ExternalMatchClient) GetExternalMatchBundle(
 	request *api_types.ApiExternalOrder,
@@ -234,7 +384,7 @@ func (c *ExternalMatchClient) GetExternalMatchBundle(
 	return c.GetExternalMatchBundleWithReceiver(request, nil /* receiverAddress */)
 }
 
-// GetExternalMatchBundleWithReceiver requests an external match bundle from the relayer
+// GetExternalMatchBundleWithReceiver requests an external match bundle from the relayer (v1 shim)
 // returns nil if no match is found
 func (c *ExternalMatchClient) GetExternalMatchBundleWithReceiver(
 	request *api_types.ApiExternalOrder,
@@ -249,37 +399,68 @@ func (c *ExternalMatchClient) GetExternalMatchBundleWithReceiver(
 	return c.GetExternalMatchBundleWithOptions(request, options)
 }
 
-// GetExternalMatchBundleWithOptions requests an external match bundle from the relayer with the given options
+// GetExternalMatchBundleWithOptions requests an external match bundle from the relayer with the given options (v1 shim)
 // returns nil if no match is found
 func (c *ExternalMatchClient) GetExternalMatchBundleWithOptions(
 	request *api_types.ApiExternalOrder,
 	options *ExternalMatchOptions,
 ) (*ExternalMatchBundle, error) {
-	requestBody := api_types.ExternalMatchRequest{
-		ExternalOrder:   *request,
-		ReceiverAddress: options.ReceiverAddress,
+	direction := request.Side
+
+	// Convert v1 order to v2
+	v2Order := v1OrderToV2(request)
+
+	// Build v2 options
+	v2Options := &ExternalMatchOptionsV2{
+		DoGasEstimation:       options.DoGasEstimation,
+		ReceiverAddress:       options.ReceiverAddress,
+		DisableGasSponsorship: !options.RequestGasSponsorship,
+		GasRefundAddress:      options.GasRefundAddress,
 	}
 
-	var response api_types.ExternalMatchResponse
-	path := options.BuildRequestPath()
-	success, err := c.doExternalMatchRequest(
-		path,
-		requestBody,
-		&response,
-	)
+	// Call v2 method
+	v2Resp, err := c.GetExternalMatchBundleWithOptionsV2(&v2Order, v2Options)
 	if err != nil {
 		return nil, err
 	}
-	if !success {
+	if v2Resp == nil {
 		return nil, nil
 	}
 
-	return &ExternalMatchBundle{
-		MatchResult:  &response.Bundle.MatchResult,
-		SettlementTx: toSettlementTransaction(&response.Bundle.SettlementTx),
-		GasSponsored: response.GasSponsored,
-	}, nil
+	// Convert v2 malleable bundle to v1
+	return v2MalleableBundleToV1(v2Resp, direction)
 }
+
+// v2MalleableBundleToV1 converts a v2 MalleableExternalMatchBundle to a v1 ExternalMatchBundle.
+// This reconstructs the v2 API response from the parsed bundle and delegates to v2ResponseToV1NonMalleable.
+func v2MalleableBundleToV1(
+	bundle *MalleableExternalMatchBundle,
+	direction string,
+) (*ExternalMatchBundle, error) {
+	// Reconstruct an ApiSettlementTransactionV2 from the parsed SettlementTransaction
+	apiSettlementTx := toApiSettlementTransactionV2(bundle.SettlementTx)
+
+	// Build the v2 API response to pass to the conversion function
+	v2Resp := &api_types.ExternalMatchResponseV2{
+		MatchBundle: api_types.MalleableAtomicMatchApiBundleV2{
+			MatchResult:  *bundle.MatchResult,
+			FeeRates:     *bundle.FeeRates,
+			MaxReceive:   *bundle.MaxReceive,
+			MinReceive:   *bundle.MinReceive,
+			MaxSend:      *bundle.MaxSend,
+			MinSend:      *bundle.MinSend,
+			SettlementTx: apiSettlementTx,
+			Deadline:     bundle.Deadline,
+		},
+		GasSponsorshipInfo: bundle.GasSponsorshipInfo,
+	}
+
+	return v2ResponseToV1NonMalleable(v2Resp, direction)
+}
+
+// ------------------
+// | Request Helper |
+// ------------------
 
 // doExternalMatchRequest handles an external match request
 // returns false if the response was NO_CONTENT or if unmarshaling failed
