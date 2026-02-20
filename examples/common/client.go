@@ -41,10 +41,22 @@ func CreateBaseExternalMatchClient() (*external_match_client.ExternalMatchClient
 	return external_match_client.NewBaseSepoliaExternalMatchClient(apiKey, &apiSecretKey), nil
 }
 
-// FindTokenAddr fetches the address of a token from the relayer
+// testnetTokenAddresses contains fallback token addresses for Arbitrum Sepolia
+var testnetTokenAddresses = map[string]string{
+	"USDC": "0xdf8d259c04020562717557f2b5a3cf28e92707d1",
+	"WETH": "0xc3414a7ef14aaaa9c4522dfc00a4e66e74e9c25a",
+}
+
+// FindTokenAddr fetches the address of a token from the relayer,
+// falling back to hardcoded testnet addresses if the API is unavailable
 func FindTokenAddr(symbol string, client *external_match_client.ExternalMatchClient) (string, error) {
 	tokens, err := client.GetSupportedTokens()
 	if err != nil {
+		// Fallback to hardcoded testnet addresses
+		if addr, ok := testnetTokenAddresses[symbol]; ok {
+			fmt.Printf("Warning: GetSupportedTokens failed (%v), using hardcoded address for %s\n", err, symbol)
+			return addr, nil
+		}
 		return "", err
 	}
 

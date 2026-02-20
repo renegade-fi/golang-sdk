@@ -198,5 +198,10 @@ func getPrivateKey() (*ecdsa.PrivateKey, error) {
 		return nil, fmt.Errorf("PKEY environment variable not set")
 	}
 
+	// Strip 0x prefix if present
+	if len(privKeyHex) > 2 && privKeyHex[:2] == "0x" {
+		privKeyHex = privKeyHex[2:]
+	}
+
 	return crypto.HexToECDSA(privKeyHex)
 }

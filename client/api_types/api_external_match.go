@@ -148,8 +148,35 @@ type ApiExternalQuote struct { //nolint:revive
 type ApiSignedQuote struct { //nolint:revive
 	Quote     ApiExternalQuote `json:"quote"`
 	Signature string           `json:"signature"`
+	Deadline  uint64           `json:"deadline"`
 	// The signed gas sponsorship info, if sponsorship was requested
 	GasSponsorshipInfo *ApiSignedGasSponsorshipInfo
+	// innerV2Quote stores the original v2 signed quote for round-tripping.
+	// The server's signature is over the v2 format, so we cannot reconstruct
+	// a valid signed v2 quote from v1 fields alone.
+	innerV2Quote *ApiSignedQuoteV2
+}
+
+// NewApiSignedQuote creates an ApiSignedQuote with the inner v2 quote for round-tripping
+func NewApiSignedQuote(
+	quote ApiExternalQuote,
+	signature string,
+	deadline uint64,
+	gasSponsorshipInfo *ApiSignedGasSponsorshipInfo,
+	innerV2Quote *ApiSignedQuoteV2,
+) *ApiSignedQuote {
+	return &ApiSignedQuote{
+		Quote:              quote,
+		Signature:          signature,
+		Deadline:           deadline,
+		GasSponsorshipInfo: gasSponsorshipInfo,
+		innerV2Quote:       innerV2Quote,
+	}
+}
+
+// InnerV2Quote returns the stored v2 signed quote for round-tripping
+func (q *ApiSignedQuote) InnerV2Quote() *ApiSignedQuoteV2 {
+	return q.innerV2Quote
 }
 
 // ApiExternalMatchBundle contains a match and a transaction that the client can submit on-chain

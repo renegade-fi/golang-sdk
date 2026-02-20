@@ -3,7 +3,6 @@ package external_match_client //nolint:revive
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 
 	geth_common "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -40,30 +39,65 @@ type SettlementTransaction struct {
 	Gas   uint64
 }
 
-// toSettlementTransaction converts an ApiSettlementTransaction to a SettlementTransaction
-func toSettlementTransaction(tx *api_types.ApiSettlementTransaction) *SettlementTransaction {
-	// Parse a geth address and bytes data from hex strings
-	to := geth_common.HexToAddress(tx.To)
-	data := geth_common.FromHex(tx.Data)
-	valueBytes := geth_common.FromHex(tx.Value)
-	value := big.NewInt(0).SetBytes(valueBytes)
+// toSettlementTransactionV2 converts a v2 ApiSettlementTransactionV2 to a SettlementTransaction
+func toSettlementTransactionV2(tx *api_types.ApiSettlementTransactionV2) *SettlementTransaction {
+	// Parse the to address
+	var to geth_common.Address
+	if tx.To != nil {
+		to = geth_common.HexToAddress(*tx.To)
+	}
+	data := geth_common.FromHex(tx.Input)
+
+	// Parse value
+	value := big.NewInt(0)
+	if tx.Value != nil {
+		valueBytes := geth_common.FromHex(*tx.Value)
+		value = big.NewInt(0).SetBytes(valueBytes)
+	}
 
 	// Parse gas from hex string
 	var gas uint64
-	if tx.Gas != "" {
-		decoded, err := hexutil.DecodeUint64(tx.Gas)
+	if tx.Gas != nil && *tx.Gas != "" {
+		decoded, err := hexutil.DecodeUint64(*tx.Gas)
 		if err == nil {
 			gas = decoded
 		}
-		// If decode fails, gas remains 0
 	}
 
 	return &SettlementTransaction{
-		Type:  tx.Type,
 		To:    to,
 		Data:  data,
 		Value: value,
 		Gas:   gas,
+	}
+}
+
+// toApiSettlementTransactionV2 converts a parsed SettlementTransaction back to the v2 API wire format
+func toApiSettlementTransactionV2(tx *SettlementTransaction) api_types.ApiSettlementTransactionV2 {
+	// Encode data as hex string with 0x prefix
+	inputHex := "0x" + geth_common.Bytes2Hex(tx.Data)
+
+	toHex := tx.To.Hex()
+
+	// Encode value
+	var valueHex *string
+	if tx.Value != nil && tx.Value.Sign() > 0 {
+		v := "0x" + tx.Value.Text(16)
+		valueHex = &v
+	}
+
+	// Encode gas
+	var gasHex *string
+	if tx.Gas > 0 {
+		g := hexutil.EncodeUint64(tx.Gas)
+		gasHex = &g
+	}
+
+	return api_types.ApiSettlementTransactionV2{
+		To:    &toHex,
+		Input: inputHex,
+		Value: valueHex,
+		Gas:   gasHex,
 	}
 }
 
@@ -76,24 +110,6 @@ type ExternalMatchFee struct {
 // Total returns the total fee for the asset
 func (f *ExternalMatchFee) Total() float64 {
 	return f.RelayerFee + f.ProtocolFee
-}
-
-// toExternalMatchFee converts an ApiExternalMatchFee to an ExternalMatchFee
-func toExternalMatchFee(fee *api_types.ApiExternalMatchFee) (*ExternalMatchFee, error) {
-	relayerFee, err := strconv.ParseFloat(fee.RelayerFee, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse relayer fee: %w", err)
-	}
-
-	protocolFee, err := strconv.ParseFloat(fee.ProtocolFee, 64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse protocol fee: %w", err)
-	}
-
-	return &ExternalMatchFee{
-		RelayerFee:  relayerFee,
-		ProtocolFee: protocolFee,
-	}, nil
 }
 
 // -----------------
@@ -137,7 +153,7 @@ func (o *ExternalQuoteOptions) WithRefundNativeEth(refundNativeEth bool) *Extern
 
 // BuildRequestPath builds the request path for the quote options
 func (o *ExternalQuoteOptions) BuildRequestPath() string {
-	path := api_types.GetExternalMatchQuotePath
+	path := api_types.GetQuoteV2Path
 	path += fmt.Sprintf("?%s=%t", api_types.DisableGasSponsorshipParam, o.DisableGasSponsorship)
 	path += fmt.Sprintf("&%s=%t", api_types.RefundNativeEthParam, o.RefundNativeEth)
 	if o.GasRefundAddress != nil {
@@ -215,7 +231,7 @@ func (o *AssembleExternalMatchOptions) WithGasRefundAddress(address *string) *As
 
 // BuildRequestPath builds the request path for the assembly options
 func (o *AssembleExternalMatchOptions) BuildRequestPath() string {
-	path := api_types.AssembleExternalQuotePath
+	path := api_types.AssembleMatchBundleV2Path
 	if o.RequestGasSponsorship {
 		// We only write this query parameter if it was explicitly set. The
 		// expectation of the auth server is that when gas sponsorship is
@@ -247,7 +263,7 @@ type ExternalMatchOptions struct {
 
 // BuildRequestPath builds the request path for the external match options
 func (o *ExternalMatchOptions) BuildRequestPath() string {
-	path := api_types.GetExternalMatchBundlePath
+	path := api_types.AssembleMatchBundleV2Path
 	path += fmt.Sprintf("?%s=%t", api_types.DisableGasSponsorshipParam, !o.RequestGasSponsorship)
 	if o.GasRefundAddress != nil {
 		path += fmt.Sprintf("&%s=%s", api_types.GasRefundAddressParam, *o.GasRefundAddress)
